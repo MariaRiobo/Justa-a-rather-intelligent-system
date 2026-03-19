@@ -1,6 +1,8 @@
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 from groq import Groq
+from gtts import gTTS
+from io import BytesIO
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered", initial_sidebar_state="collapsed")
@@ -20,7 +22,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("👓 E.D.I.T.H.")
-st.write("Cerebro Groq Activado. Lista para operar, Mary.")
+st.write("Sistemas en línea. Lista para operar, Mary.")
 
 # --- CONEXIÓN GROQ ---
 API_KEY = st.secrets["GROQ_API_KEY"]
@@ -44,7 +46,6 @@ texto_manual = st.chat_input("O escribe tu comando aquí...")
 # --- PROCESAMIENTO ---
 user_text = None
 
-# 1. Convertimos tu voz a texto si usaste el micrófono
 if audio_data:
     with st.spinner("Descifrando audio..."):
         try:
@@ -56,11 +57,9 @@ if audio_data:
         except Exception as e:
             st.error(f"Error de audio: {e}")
             
-# 2. O tomamos el texto si escribiste
 elif texto_manual:
     user_text = texto_manual
 
-# 3. Enviamos el texto a la IA
 if user_text:
     with st.spinner("Procesando..."):
         try:
@@ -78,6 +77,12 @@ if user_text:
             # Guardamos en el historial
             st.session_state.chat_history.append(("Mary", user_text))
             st.session_state.chat_history.append(("EDITH", respuesta_texto))
+            
+            # --- SISTEMA DE VOZ (NUEVO) ---
+            tts = gTTS(text=respuesta_texto, lang='es')
+            audio_fp = BytesIO()
+            tts.write_to_fp(audio_fp)
+            st.audio(audio_fp, format='audio/mp3', autoplay=True)
             
         except Exception as e:
             st.error(f"Error en enlace satelital: {e}")
