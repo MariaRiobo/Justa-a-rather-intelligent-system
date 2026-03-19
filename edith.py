@@ -32,7 +32,7 @@ st.title("👓 E.D.I.T.H.")
 st.write("Even Dead, I'm The Hero. Lista para operar, Francis.")
 
 # --- API Y LÓGICA ---
-API_KEY = "AIzaSyCcPBIDHMIdVVhf09OQeoLX4UmQXT2Q184"
+API_KEY = st.secrets["GEMINI_API_KEY"]
 client = genai.Client(api_key=API_KEY)
 
 if "chat_history" not in st.session_state:
