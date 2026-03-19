@@ -83,7 +83,7 @@ if user_input:
             
             # Usamos el modelo 1.5 flash para evitar el bloqueo del Free Tier
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.0-flash',
                 contents=contenido_a_enviar
             )
             
