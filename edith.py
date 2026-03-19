@@ -1,15 +1,9 @@
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
-from google import genai
-from google.genai import types # <-- NUEVA HERRAMIENTA PARA EL AUDIO
+from groq import Groq
 
-# --- CONFIGURACIÓN DE PÁGINA PARA MÓVIL ---
-st.set_page_config(
-    page_title="E.D.I.T.H.", 
-    page_icon="👓", 
-    layout="centered", 
-    initial_sidebar_state="collapsed"
-)
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered", initial_sidebar_state="collapsed")
 
 # CSS para Dark Mode Stark
 st.markdown("""
@@ -17,12 +11,8 @@ st.markdown("""
     .stApp { background-color: #000000; color: #00d4ff; }
     [data-testid="stHeader"] { background: rgba(0,0,0,0); }
     .stButton>button { 
-        border-radius: 50px; 
-        height: 3em; 
-        border: 2px solid #00d4ff; 
-        background-color: #081217; 
-        color: white; 
-        font-weight: bold;
+        border-radius: 50px; height: 3em; border: 2px solid #00d4ff; 
+        background-color: #081217; color: white; font-weight: bold;
         box-shadow: 0px 0px 15px #00d4ff;
     }
     .stChatInput { bottom: 20px; }
@@ -30,12 +20,11 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("👓 E.D.I.T.H.")
-st.write("Even Dead, I'm The Hero. Lista para operar, Mary.")
+st.write("Cerebro Groq Activado. Lista para operar, Mary.")
 
-# --- API Y LÓGICA ---
-# Leemos tu llave secreta desde la bóveda de Streamlit
-API_KEY = st.secrets["GEMINI_API_KEY"]
-client = genai.Client(api_key=API_KEY)
+# --- CONEXIÓN GROQ ---
+API_KEY = st.secrets["GROQ_API_KEY"]
+client = Groq(api_key=API_KEY)
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -50,51 +39,45 @@ audio_data = mic_recorder(
     use_container_width=True
 )
 
-# --- CONSOLA DE TEXTO ALTERNATIVA ---
-texto_manual = st.chat_input("Consola de mando manual...")
+texto_manual = st.chat_input("O escribe tu comando aquí...")
 
 # --- PROCESAMIENTO ---
-user_input = None
-es_voz = False
+user_text = None
 
+# 1. Convertimos tu voz a texto si usaste el micrófono
 if audio_data:
-    user_input = audio_data['bytes']
-    es_voz = True
-elif texto_manual:
-    user_input = texto_manual
-
-if user_input:
-    with st.spinner("Analizando..."):
+    with st.spinner("Descifrando audio..."):
         try:
-            prompt_sistema = "Eres E.D.I.T.H., la IA de los lentes de Tony Stark. Tu usuaria es Mary. Eres ejecutiva, inteligente y rápida. Responde corto."
-            
-            # --- EL ARREGLO MÁGICO ESTÁ AQUÍ ---
-            if es_voz:
-                # Metemos el audio crudo en el "sobre" que exige Google
-                contenido_a_enviar = [
-                    prompt_sistema,
-                    types.Part.from_bytes(data=user_input, mime_type='audio/webm')
-                ]
-                mensaje_mostrar = "🎙️ [Mensaje de Audio]"
-            else:
-                # Si es texto, va normal
-                contenido_a_enviar = [prompt_sistema, user_input]
-                mensaje_mostrar = texto_manual
-            
-            # Usamos el modelo 1.5 flash para evitar el bloqueo del Free Tier
-            response = client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=contenido_a_enviar
+            transcription = client.audio.transcriptions.create(
+              file=("audio.webm", audio_data['bytes']),
+              model="whisper-large-v3"
             )
+            user_text = transcription.text
+        except Exception as e:
+            st.error(f"Error de audio: {e}")
             
-            respuesta_texto = response.text
+# 2. O tomamos el texto si escribiste
+elif texto_manual:
+    user_text = texto_manual
+
+# 3. Enviamos el texto a la IA
+if user_text:
+    with st.spinner("Procesando..."):
+        try:
+            prompt_sistema = "Eres E.D.I.T.H., la IA de los lentes de Tony Stark. Tu usuaria es Mary. Eres ejecutiva, inteligente y muy rápida. Responde corto."
             
-            # Guardamos y mostramos
-            st.session_state.chat_history.append(("Mary", mensaje_mostrar))
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": prompt_sistema},
+                    {"role": "user", "content": user_text}
+                ],
+                model="llama3-8b-8192",
+            )
+            respuesta_texto = chat_completion.choices[0].message.content
+            
+            # Guardamos en el historial
+            st.session_state.chat_history.append(("Mary", user_text))
             st.session_state.chat_history.append(("EDITH", respuesta_texto))
-            
-            # VOZ DE RETORNO
-            st.tts(respuesta_texto)
             
         except Exception as e:
             st.error(f"Error en enlace satelital: {e}")
