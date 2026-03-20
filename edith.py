@@ -77,12 +77,27 @@ if user_text:
     st.session_state.chat_history.append(("Francis", user_text))
     st.session_state.chat_history.append(("EDITH", ans))
 
-    # --- GENERAR VOZ ---
-    tts = gTTS(text=ans, lang='es')
-    audio_fp = BytesIO()
-    tts.write_to_fp(audio_fp)
-    st.session_state.last_audio = audio_fp.getvalue()
-    st.rerun()
+   # --- GENERACIÓN DE AUDIO FORZADA ---
+        tts = gTTS(text=respuesta, lang='es')
+        audio_fp = BytesIO()
+        tts.write_to_fp(audio_fp)
+        audio_fp.seek(0)
+        
+        audio_b64 = base64.b64encode(audio_fp.read()).decode()
+        
+        # Incrementamos la llave para que Streamlit crea que es un objeto nuevo
+        st.session_state.audio_key += 1
+        
+        # Inyectamos el HTML con una ID única cada vez
+        audio_html = f"""
+            <audio autoplay key="{st.session_state.audio_key}">
+                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+            </audio>
+        """
+        audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
+        
+    except Exception as e:
+        st.error(f"Error: {e}")
 
 # --- RENDERIZADO DE HISTORIAL Y AUDIO ---
 for autor, msg in reversed(st.session_state.chat_history):
