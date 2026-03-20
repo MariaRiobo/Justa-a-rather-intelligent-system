@@ -4,4 +4,4 @@ groq
 gTTS
 requests
 wikipedia
-duckduckgo-search
+beautifulsoup4
