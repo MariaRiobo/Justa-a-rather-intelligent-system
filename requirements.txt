@@ -6,3 +6,4 @@ requests
 wikipedia
 beautifulsoup4
 pytz
+PyPDF2
