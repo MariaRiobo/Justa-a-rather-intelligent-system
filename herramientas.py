@@ -29,22 +29,25 @@ def buscar_en_wikipedia(consulta):
         return f"No encontré datos específicos en Wikipedia sobre '{consulta}'."
 
 def buscar_en_internet(consulta):
-    """Busca en tiempo real cualquier información en la web global."""
+    """Busca en tiempo real con un motor de búsqueda más agresivo."""
     try:
+        from duckduckgo_search import DDGS
         with DDGS() as ddgs:
-            # Buscamos los 3 mejores resultados
-            resultados = [r for r in ddgs.text(consulta, max_results=3)]
-            if not resultados:
-                return "No encontré resultados recientes en la red."
+            # Forzamos la búsqueda en una región específica (Argentina) para mayor precisión
+            resultados = [r for r in ddgs.text(f"{consulta} actualidad resultados", region="ar-es", max_results=5)]
             
-            # Construimos un reporte corto
-            reporte = f"Resultados de mi escaneo sobre '{consulta}':\n"
-            for r in resultados:
-                reporte += f"- {r['body'][:200]}...\n"
+            if not resultados:
+                return "Escaneo fallido: No hay datos recientes en la red superficial."
+            
+            # Consolidamos un reporte más robusto
+            reporte = f"REPORTE TÁCTICO SOBRE: {consulta}\n"
+            for i, r in enumerate(resultados, 1):
+                reporte += f"Fuentes {i}: {r['title']} - {r['body']}\n"
+            
             return reporte
     except Exception as e:
-        return f"Error en el escaneo de red: {str(e)}"
-
+        return f"Error en los servidores de búsqueda: {str(e)}"
+        
 mis_herramientas = [
     {"type": "function", "function": {"name": "obtener_fecha_hora", "description": "Obtiene la fecha y hora actual.", "parameters": {"type": "object", "properties": {}}}},
     {"type": "function", "function": {"name": "obtener_clima", "description": "Busca el clima de una ciudad.", "parameters": {"type": "object", "properties": {"ciudad": {"type": "string"}}, "required": ["ciudad"]}}},
