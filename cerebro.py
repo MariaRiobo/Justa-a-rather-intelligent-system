@@ -56,14 +56,18 @@ def pensar_respuesta(texto_usuario, historial):
             argumentos = json.loads(tool_call.function.arguments)
             
             # --- RUTAS DE HERRAMIENTAS ---
+          # ... (dentro del bucle de tool_calls) ...
             if nombre_funcion == "obtener_fecha_hora":
                 resultado = herramientas.obtener_fecha_hora()
             elif nombre_funcion == "obtener_clima":
                 resultado = herramientas.obtener_clima(argumentos.get("ciudad", "Buenos Aires"))
             elif nombre_funcion == "buscar_en_wikipedia":
                 resultado = herramientas.buscar_en_wikipedia(argumentos.get("consulta"))
+            elif nombre_funcion == "buscar_en_internet": # <--- NUEVA RUTA
+                resultado = herramientas.buscar_en_internet(argumentos.get("consulta"))
             else:
                 resultado = "Herramienta no encontrada."
+            # ...
             # -----------------------------
                 
             mensajes_api.append({
