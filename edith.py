@@ -67,7 +67,7 @@ with st.expander("📂 Escáner de Archivos"):
     archivo_subido = st.file_uploader("Subir documento (PDF o TXT)", type=['txt', 'pdf'])
     texto_documento = ""
     if archivo_subido is not None:
-        texto_documento = archivos.extraer_texto(archivo_subido)
+        texto_documento = herramientas.extraer_texto(archivo_subido)
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
 
 # --- CONTROLES DE AUDIO / TEXTO ---
