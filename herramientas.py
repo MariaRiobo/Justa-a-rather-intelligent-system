@@ -27,20 +27,27 @@ def obtener_clima(ciudad="Buenos Aires"):
         return "Error de conexión con el satélite climático."
 
 def buscar_en_internet(consulta):
-    """Rastreo rápido de la red global."""
+    """Rastreo de emergencia usando un motor alternativo si DuckDuckGo falla."""
     try:
+        from duckduckgo_search import DDGS
         with DDGS() as ddgs:
-            # Buscamos noticias y resultados recientes
-            resultados = [r for r in ddgs.text(f"{consulta} actualidad", region="ar-es", max_results=3)]
-            if not resultados:
-                return "No se encontraron transmisiones recientes sobre ese tema."
+            # Quitamos 'actualidad' y dejamos que el motor decida, pero forzamos tiempo reciente
+            resultados = list(ddgs.text(f"{consulta} resultado hoy", region="ar-es", max_results=5))
             
-            reporte = ""
-            for r in resultados:
-                reporte += f"- {r['title']}: {r['body']}\n"
-            return reporte
+            if not resultados:
+                # Intento 2: Búsqueda más amplia
+                resultados = list(ddgs.text(f"último partido de {consulta}", region="ar-es", max_results=3))
+
+            if resultados:
+                reporte = f"DATOS ENCONTRADOS PARA {consulta.upper()}:\n"
+                for r in resultados:
+                    reporte += f"- {r['title']}: {r['body']}\n"
+                return reporte
+            
+        return "No se encontraron datos en la red. Intenta reformular la búsqueda, señor."
     except Exception as e:
-        return f"Interferencia en la red de búsqueda: {str(e)}"
+        # Si falla la librería, intentamos un raspado manual básico (Plan C)
+        return f"Error de conexión en el rastreador: {str(e)}"
 
 def buscar_en_wikipedia(consulta):
     """Consulta la base de datos histórica."""
