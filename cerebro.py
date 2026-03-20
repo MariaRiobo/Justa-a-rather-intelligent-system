@@ -11,17 +11,20 @@ def pensar_respuesta(texto_usuario, historial):
     texto_min = texto_usuario.lower()
     datos_extra = ""
 
-    # RASTREO WEB
-    keywords_web = ["boca", "river", "partido", "resultado", "jugó", "dolar", "noticias", "precio", "quien es", "quién es"]
-    
-    if any(w in texto_min for w in keywords_web):
-        with st.spinner("E.D.I.T.H. rastreando la red..."):
-            datos_extra = herramientas.buscar_en_internet(texto_usuario)
-    
-    # RASTREO CLIMÁTICO
+    # PRIORIDAD 1: Sensor de Divisas (Dólar)
+    if "dolar" in texto_min or "dólar" in texto_min:
+        with st.spinner("Accediendo a la base de datos financiera..."):
+            datos_extra = herramientas.obtener_cotizacion_dolar()
+            
+    # PRIORIDAD 2: Rastreo Meteorológico
     elif any(w in texto_min for w in ["clima", "temperatura", "tiempo"]):
         with st.spinner("Consultando satélites meteorológicos..."):
             datos_extra = herramientas.obtener_clima()
+
+    # PRIORIDAD 3: Rastreo Web General (Boca, noticias, etc.)
+    elif any(w in texto_min for w in ["boca", "river", "partido", "resultado", "jugó", "noticias", "precio", "quien es", "quién es"]):
+        with st.spinner("E.D.I.T.H. rastreando la red..."):
+            datos_extra = herramientas.buscar_en_internet(texto_usuario)
 
     # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
@@ -29,7 +32,7 @@ def pensar_respuesta(texto_usuario, historial):
     if datos_extra:
         contexto_inyectado += f"\n\n--- INFORMACIÓN DE CAMPO RECUPERADA ---\n{datos_extra}\n"
         contexto_inyectado += "\nINSTRUCCIÓN DE PRIORIDAD ALTA: Analiza los 'DATOS DE CAMPO' de arriba. "
-        contexto_inyectado += "Si en los textos aparece un marcador o un resultado, INFÓRMALO DE INMEDIATO. "
+        contexto_inyectado += "Si hay precios o resultados, dálos como información oficial de Industrias Stark."
         contexto_inyectado += "No digas que no tienes internet."
 
     mensajes_api = [{"role": "system", "content": contexto_inyectado}]
