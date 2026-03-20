@@ -62,6 +62,14 @@ with st.expander("👁️ Activar Sensores Ópticos"):
     else:
         imagen_actual = st.file_uploader("Subir imagen", type=['png', 'jpg', 'jpeg'])
 
+# --- ESCÁNER DE DOCUMENTOS ---
+with st.expander("📂 Escáner de Archivos"):
+    archivo_subido = st.file_uploader("Subir documento (PDF o TXT)", type=['txt', 'pdf'])
+    texto_documento = ""
+    if archivo_subido is not None:
+        texto_documento = archivos.extraer_texto(archivo_subido)
+        st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
+
 # --- CONTROLES DE AUDIO / TEXTO ---
 audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
 texto_manual = st.chat_input("Comando (o pregunta sobre la foto)...")
@@ -84,7 +92,7 @@ if user_text or imagen_actual:
             respuesta = vision.analizar_imagen(imagen_actual.getvalue(), user_text)
         else:
             # Procesamiento lógico normal
-            respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history)
+            respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, texto_documento)
         
         # Guardamos en el historial
         st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
