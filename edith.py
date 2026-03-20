@@ -25,28 +25,34 @@ audio_placeholder = st.empty()
 
 # --- PROTOCOLO DE ENCENDIDO (NUEVO) ---
 if not st.session_state.sistemas_activados:
-    mensaje_bienvenida = "Sistemas activados. Soy EDITH. Even dead I'm the hero. Estoy lista para servirte, Francis."
+    st.info("🛡️ Sistemas en espera. El navegador requiere autorización manual para habilitar el audio.")
     
-    try:
-        # Generamos el audio de bienvenida
-        audio_b64 = voz.generar_audio(mensaje_bienvenida)
-        st.session_state.audio_key += 1
+    # Este botón le da al navegador el "clic" que necesita para permitir el sonido
+    if st.button("🔌 INICIAR E.D.I.T.H. (Autorizar Audio)"):
+        mensaje_bienvenida = "Sistemas activados. Soy EDITH. Even dead I'm the hero. Estoy lista para servirte."
         
-        audio_html = f"""
-            <audio autoplay key="init_{st.session_state.audio_key}">
-                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-            </audio>
-        """
-        audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
+        try:
+            # Generamos el audio de bienvenida
+            audio_b64 = voz.generar_audio(mensaje_bienvenida)
+            st.session_state.audio_key += 1
+            
+            audio_html = f"""
+                <audio autoplay key="init_{st.session_state.audio_key}">
+                    <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                </audio>
+            """
+            # Usamos st.markdown directo para que el audio se inyecte en este mismo instante
+            st.markdown(audio_html, unsafe_allow_html=True)
+            
+            # Agregamos el mensaje al chat visual
+            st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
+            
+        except Exception as e:
+            st.error(f"Fallo en el sintetizador de voz inicial: {e}")
+            
+        # Marcamos como activado para que el botón desaparezca y no lo repita
+        st.session_state.sistemas_activados = True
         
-        # Agregamos el mensaje al chat visual
-        st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
-        
-    except Exception as e:
-        st.error(f"Fallo en el sintetizador de voz inicial: {e}")
-        
-    # Bloqueamos el saludo para que no lo repita al interactuar
-    st.session_state.sistemas_activados = True
 # --- SENSORES ÓPTICOS (NUEVO) ---
 with st.expander("👁️ Activar Sensores Ópticos"):
     opcion_vision = st.radio("Modo de entrada:", ["Cámara", "Archivo"], horizontal=True)
