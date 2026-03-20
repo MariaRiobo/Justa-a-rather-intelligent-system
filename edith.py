@@ -6,117 +6,115 @@ from io import BytesIO
 import base64
 import time
 
-# --- CONFIGURACIÓN DE PÁGINA ---
+# --- CONFIGURACIÓN ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
 
-# --- CSS MAESTRO: ANCLAJE TOTAL Y SCROLL INTERNO ---
+# --- CSS MAESTRO: ESTRUCTURA RÍGIDA STARK ---
 st.markdown("""
     <style>
-    /* Fondo General */
-    .stApp { background-color: #000000; color: #00d4ff; overflow: hidden; }
+    /* 1. Reset y Fondo */
+    .stApp { background-color: #000000; color: #00d4ff; }
     [data-testid="stHeader"] { display: none; }
 
-    /* 1. ENCABEZADO FIJO */
+    /* 2. HEADER FIJO (Superior) */
+    .st-emotion-cache-18ni7ap { padding: 0 !important; } /* Reset padding contenedor */
+    
     .fixed-header {
         position: fixed;
         top: 0; left: 0; width: 100%;
-        height: 140px;
-        background-color: black;
+        height: 150px;
+        background-color: rgba(0, 0, 0, 1);
         z-index: 1000;
         text-align: center;
         padding-top: 20px;
-        border-bottom: 1px solid rgba(0, 212, 255, 0.4);
+        border-bottom: 2px solid #00d4ff;
+        box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
     }
-    .orb {
-        width: 45px; height: 45px;
-        background: radial-gradient(circle, #00d4ff 0%, #000 70%);
+    .orb-glow {
+        width: 60px; height: 60px;
+        background: radial-gradient(circle, #00d4ff 0%, #000 75%);
         border-radius: 50%; margin: 0 auto;
-        box-shadow: 0 0 15px #00d4ff;
+        box-shadow: 0 0 25px #00d4ff;
         animation: pulse 3s infinite;
     }
 
-    /* 2. CONTENEDOR DE HISTORIAL (EL ÚNICO QUE SE MUEVE) */
-    .main-chat-container {
-        position: fixed;
-        top: 140px; /* Debajo del header */
-        bottom: 160px; /* Encima del footer */
-        left: 0; width: 100%;
-        overflow-y: auto; /* Scroll solo aquí */
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
+    /* 3. SECCIÓN MEDIA (HISTORIAL) */
+    .main-content {
+        margin-top: 170px !important; /* Espacio para no chocar con header */
+        margin-bottom: 200px !important; /* Espacio para no chocar con footer */
+        padding: 10px;
     }
 
-    /* 3. PIE DE PÁGINA FIJO (CONTROL) */
+    /* 4. FOOTER FIJO (Botón y Teclado) */
     .fixed-footer {
         position: fixed;
         bottom: 0; left: 0; width: 100%;
-        height: 160px;
-        background: black;
+        height: 180px;
+        background-color: rgba(0, 0, 0, 1);
         z-index: 1000;
-        border-top: 1px solid rgba(0, 212, 255, 0.4);
-        padding: 10px 0;
+        border-top: 2px solid #00d4ff;
+        padding: 20px 0;
         display: flex;
         flex-direction: column;
         align-items: center;
+        box-shadow: 0 -5px 20px rgba(0, 212, 255, 0.4);
     }
 
-    /* Estilo del Botón "Hablar Ahora" */
+    /* Botón de Hablar (Estética de la página) */
     .stButton>button {
-        background-color: transparent !important;
-        border: 2px solid #00d4ff !important;
+        background-color: #000000 !important;
         color: #00d4ff !important;
-        border-radius: 30px !important;
+        border: 2px solid #00d4ff !important;
+        border-radius: 25px !important;
+        width: 250px !important;
         font-weight: bold !important;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        letter-spacing: 2px !important;
+        box-shadow: 0 0 10px #00d4ff !important;
     }
     
-    /* Input de Texto */
     .stChatInputContainer {
-        padding-bottom: 20px !important;
+        bottom: 20px !important;
+        background: transparent !important;
     }
 
-    /* Animación del Orbe */
     @keyframes pulse {
-        0% { transform: scale(0.95); opacity: 0.7; }
+        0% { transform: scale(0.95); opacity: 0.8; }
         50% { transform: scale(1.05); opacity: 1; }
-        100% { transform: scale(0.95); opacity: 0.7; }
+        100% { transform: scale(0.95); opacity: 0.8; }
     }
     
     audio { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- CABECERA ANCLADA ---
+# --- HEADER FIJO ---
 st.markdown("""
     <div class="fixed-header">
-        <div class="orb"></div>
-        <h2 style='margin: 5px 0; letter-spacing: 5px;'>E.D.I.T.H.</h2>
-        <p style='font-size: 0.7em; opacity: 0.8;'>SISTEMAS ARMÓNICOS</p>
+        <div class="orb-glow"></div>
+        <h1 style='color: #00d4ff; margin: 5px 0; font-size: 1.8em; letter-spacing: 5px;'>E.D.I.T.H.</h1>
+        <p style='color: #00d4ff; font-size: 0.8em; opacity: 0.7;'>SISTEMAS ARMÓNICOS ACTIVOS</p>
     </div>
     """, unsafe_allow_html=True)
 
-# --- LÓGICA ---
+# --- LÓGICA DE DATOS ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "audio_key" not in st.session_state:
     st.session_state.audio_key = 0
 
-# --- HISTORIAL (ZONA DE SCROLL) ---
-# Usamos un div contenedor con la clase CSS para el scroll
-st.markdown('<div class="main-chat-container">', unsafe_allow_html=True)
+# --- SECCIÓN MEDIA: HISTORIAL ---
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
+# Iteramos normal para que lo nuevo aparezca ABAJO (estándar de chat)
 for autor, msg in st.session_state.chat_history:
     is_edith = (autor == "EDITH")
     with st.chat_message("assistant" if is_edith else "user", avatar="👓" if is_edith else "👤"):
         st.write(f"**{autor}:** {msg}")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PIE DE PÁGINA ANCLADO ---
+# --- FOOTER FIJO ---
 st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1,3,1])
+col1, col2, col3 = st.columns([1,2,1])
 with col2:
     audio_data = mic_recorder(
         start_prompt="HABLAR AHORA",
@@ -125,8 +123,8 @@ with col2:
         just_once=True,
         use_container_width=True
     )
-    # Chat input nativo ( Streamlit lo posiciona relativo al contenedor, pero con CSS lo fijamos)
-    texto_manual = st.chat_input("Escribe un comando...")
+    # Input de texto manual
+    texto_manual = st.chat_input("Ingrese comando táctico...")
 st.markdown('</div>', unsafe_allow_html=True)
 
 # --- PROCESAMIENTO ---
@@ -145,7 +143,7 @@ elif texto_manual:
 if user_text:
     try:
         res = client.chat.completions.create(
-            messages=[{"role": "system", "content": "Eres EDITH. Responde muy corto."}, {"role": "user", "content": user_text}],
+            messages=[{"role": "system", "content": "Eres EDITH. Responde de forma muy concisa y profesional."}, {"role": "user", "content": user_text}],
             model="llama-3.1-8b-instant"
         )
         ans = res.choices[0].message.content
