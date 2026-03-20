@@ -1,6 +1,6 @@
 import datetime
 import requests
-from zoneinfo import ZoneInfo
+import pytz
 import wikipedia
 from bs4 import BeautifulSoup
 
@@ -27,9 +27,11 @@ def obtener_cotizacion_dolar():
 
 def obtener_fecha_hora():
     """Retorna la fecha y hora actual en Buenos Aires."""
-    zona = ZoneInfo("America/Argentina/Buenos_Aires")
+    # Parche de sincronización usando pytz
+    zona = pytz.timezone("America/Argentina/Buenos_Aires")
     ahora = datetime.datetime.now(zona)
-    return ahora.strftime("%A, %d de %B de %Y, %H:%M:%S")
+    # Formato numérico estándar para que la IA no se confunda con el idioma del servidor
+    return ahora.strftime("%Y-%m-%d %H:%M:%S")
 
 def obtener_clima(ciudad="Buenos Aires"):
     """Consulta el clima actual por satélite."""
