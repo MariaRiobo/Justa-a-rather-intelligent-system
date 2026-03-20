@@ -2,7 +2,7 @@ import datetime
 import requests
 from zoneinfo import ZoneInfo
 import wikipedia
-from duckduckgo_search import DDGS
+from bs4 import BeautifulSoup
 
 # Configuración básica
 wikipedia.set_lang("es")
@@ -27,29 +27,41 @@ def obtener_clima(ciudad="Buenos Aires"):
         return "Error de conexión con el satélite climático."
 
 def buscar_en_internet(consulta):
-    """Rastreo de red con protocolos de redundancia."""
+    """Rastreo usando Google News (sin API) para evitar bloqueos."""
     try:
-        from duckduckgo_search import DDGS
-        with DDGS() as ddgs:
-            # Intento 1: Búsqueda específica de resultados
-            query_primaria = f"{consulta} ultimo resultado partido"
-            resultados = list(ddgs.text(query_primaria, region="ar-es", max_results=3))
-            
-            # Intento 2: Si el primero falla, buscamos en noticias generales
-            if not resultados:
-                query_secundaria = f"noticias {consulta} hoy"
-                resultados = list(ddgs.text(query_secundaria, region="ar-es", max_results=3))
+        # Simulamos un navegador real para que no nos bloqueen
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        # Buscamos en Google News que es más rápido para resultados deportivos
+        url = f"https://www.google.com/search?q={consulta.replace(' ', '+')}+resultado+reciente&tbm=nws"
+        
+        respuesta = requests.get(url, headers=headers, timeout=10)
+        if respuesta.status_code != 200:
+            return "Error: Los servidores de búsqueda no responden (Bloqueo de IP)."
 
-            if resultados:
-                reporte = f"REPORTES DE RED PARA '{consulta}':\n"
-                for r in resultados:
-                    # Limpiamos el texto para que la IA lo entienda mejor
-                    reporte += f"- TITULAR: {r['title']}\n  INFO: {r['body']}\n\n"
-                return reporte
+        soup = BeautifulSoup(respuesta.text, 'html.parser')
+        
+        # Extraemos los títulos y fragmentos de las noticias
+        articulos = soup.find_all('div', {'class': 'n0vP9d'}) # Clase común en Google News
+        
+        if not articulos:
+            # Intento genérico si el de noticias falla
+            url_gen = f"https://www.google.com/search?q={consulta.replace(' ', '+')}+resultado"
+            respuesta = requests.get(url_gen, headers=headers, timeout=10)
+            soup = BeautifulSoup(respuesta.text, 'html.parser')
+            resumen = soup.find('div', {'class': 'VwiC3b'}) # Clase de descripción de Google
+            return f"Resumen detectado: {resumen.text}" if resumen else "No se hallaron datos legibles."
+
+        reporte = "ÚLTIMOS REPORTES ENCONTRADOS:\n"
+        for i, art in enumerate(articulos[:3]): # Tomamos los 3 primeros
+            reporte += f"- {art.text}\n"
             
-            return "Error: No se detectaron transmisiones ni datos recientes en la red superficial."
+        return reporte
+
     except Exception as e:
-        return f"Fallo en el módulo de búsqueda: {str(e)}"
+        return f"Fallo en el escaneo de red: {str(e)}"
 
 def buscar_en_wikipedia(consulta):
     """Consulta la base de datos histórica."""
