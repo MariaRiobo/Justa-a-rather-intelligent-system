@@ -9,75 +9,76 @@ import time
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
 
-# --- CSS MAESTRO: ANCLAJE TOTAL Y ESTÉTICA UNIFICADA ---
+# --- CSS MAESTRO: ANCLAJE TOTAL Y SCROLL INTERNO ---
 st.markdown("""
     <style>
-    .stApp { background-color: #000000; color: #00d4ff; }
+    /* Fondo General */
+    .stApp { background-color: #000000; color: #00d4ff; overflow: hidden; }
     [data-testid="stHeader"] { display: none; }
 
-    /* 1. CABECERA FIJA */
+    /* 1. ENCABEZADO FIJO */
     .fixed-header {
         position: fixed;
         top: 0; left: 0; width: 100%;
+        height: 140px;
         background-color: black;
         z-index: 1000;
         text-align: center;
-        padding: 15px 0;
+        padding-top: 20px;
         border-bottom: 1px solid rgba(0, 212, 255, 0.4);
     }
     .orb {
-        width: 50px; height: 50px;
+        width: 45px; height: 45px;
         background: radial-gradient(circle, #00d4ff 0%, #000 70%);
         border-radius: 50%; margin: 0 auto;
         box-shadow: 0 0 15px #00d4ff;
         animation: pulse 3s infinite;
     }
 
-    /* 2. ÁREA DE CHAT (Con margen para no chocar con lo fijo) */
-    .stMainBlockContainer {
-        padding-top: 150px !important;
-        padding-bottom: 180px !important;
+    /* 2. CONTENEDOR DE HISTORIAL (EL ÚNICO QUE SE MUEVE) */
+    .main-chat-container {
+        position: fixed;
+        top: 140px; /* Debajo del header */
+        bottom: 160px; /* Encima del footer */
+        left: 0; width: 100%;
+        overflow-y: auto; /* Scroll solo aquí */
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
     }
 
-    /* 3. PANEL INFERIOR FIJO */
+    /* 3. PIE DE PÁGINA FIJO (CONTROL) */
     .fixed-footer {
         position: fixed;
         bottom: 0; left: 0; width: 100%;
+        height: 160px;
         background: black;
         z-index: 1000;
-        padding: 20px 0;
         border-top: 1px solid rgba(0, 212, 255, 0.4);
+        padding: 10px 0;
         display: flex;
         flex-direction: column;
         align-items: center;
     }
 
-    /* 4. BOTÓN DE HABLAR PERSONALIZADO */
+    /* Estilo del Botón "Hablar Ahora" */
     .stButton>button {
         background-color: transparent !important;
         border: 2px solid #00d4ff !important;
         color: #00d4ff !important;
         border-radius: 30px !important;
-        padding: 10px 25px !important;
         font-weight: bold !important;
         text-transform: uppercase;
         letter-spacing: 2px;
         box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-        transition: 0.3s;
     }
-    .stButton>button:active {
-        background-color: #00d4ff !important;
-        color: black !important;
-        box-shadow: 0 0 20px #00d4ff !important;
-    }
-
-    /* Burbujas de Chat */
-    .stChatMessage {
-        background: rgba(8, 18, 23, 0.9) !important;
-        border: 1px solid #00d4ff !important;
-        border-radius: 15px !important;
+    
+    /* Input de Texto */
+    .stChatInputContainer {
+        padding-bottom: 20px !important;
     }
 
+    /* Animación del Orbe */
     @keyframes pulse {
         0% { transform: scale(0.95); opacity: 0.7; }
         50% { transform: scale(1.05); opacity: 1; }
@@ -88,34 +89,35 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- CABECERA FIJA ---
+# --- CABECERA ANCLADA ---
 st.markdown("""
     <div class="fixed-header">
         <div class="orb"></div>
         <h2 style='margin: 5px 0; letter-spacing: 5px;'>E.D.I.T.H.</h2>
-        <p style='font-size: 0.7em; opacity: 0.8;'>PROTOCOLOS DE COMUNICACIÓN</p>
+        <p style='font-size: 0.7em; opacity: 0.8;'>SISTEMAS ARMÓNICOS</p>
     </div>
     """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN ---
+# --- LÓGICA ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "audio_key" not in st.session_state:
     st.session_state.audio_key = 0
 
-# --- HISTORIAL (Flujo de abajo hacia arriba) ---
+# --- HISTORIAL (ZONA DE SCROLL) ---
+# Usamos un div contenedor con la clase CSS para el scroll
+st.markdown('<div class="main-chat-container">', unsafe_allow_html=True)
 for autor, msg in st.session_state.chat_history:
     is_edith = (autor == "EDITH")
     with st.chat_message("assistant" if is_edith else "user", avatar="👓" if is_edith else "👤"):
         st.write(f"**{autor}:** {msg}")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PIE DE PÁGINA FIJO ---
+# --- PIE DE PÁGINA ANCLADO ---
 st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1,2,1])
+col1, col2, col3 = st.columns([1,3,1])
 with col2:
-    # El botón cambia de texto dinámicamente
     audio_data = mic_recorder(
         start_prompt="HABLAR AHORA",
         stop_prompt="ESCUCHANDO...",
@@ -123,6 +125,7 @@ with col2:
         just_once=True,
         use_container_width=True
     )
+    # Chat input nativo ( Streamlit lo posiciona relativo al contenedor, pero con CSS lo fijamos)
     texto_manual = st.chat_input("Escribe un comando...")
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -142,7 +145,7 @@ elif texto_manual:
 if user_text:
     try:
         res = client.chat.completions.create(
-            messages=[{"role": "system", "content": "Eres EDITH. Responde corto."}, {"role": "user", "content": user_text}],
+            messages=[{"role": "system", "content": "Eres EDITH. Responde muy corto."}, {"role": "user", "content": user_text}],
             model="llama-3.1-8b-instant"
         )
         ans = res.choices[0].message.content
