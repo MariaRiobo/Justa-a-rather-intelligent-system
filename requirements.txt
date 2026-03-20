@@ -5,3 +5,4 @@ gTTS
 requests
 wikipedia
 beautifulsoup4
+pytz
