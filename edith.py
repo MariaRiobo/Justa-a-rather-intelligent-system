@@ -13,7 +13,8 @@ st.markdown("""
     <style>
     .stApp { background-color: #000000; color: #00d4ff; }
     [data-testid="stHeader"] { display: none; }
-    .orb { width: 60px; height: 60px; background: radial-gradient(circle, #00d4ff 0%, #000 75%); border-radius: 50%; margin: 10px auto; box-shadow: 0 0 20px #00d4ff; }
+    .orb { width: 60px; height: 60px; background: radial-gradient(circle, #00d4ff 0%, #000 75%); border-radius: 50%; margin: 10px auto; box-shadow: 0 0 20px #00d4ff; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
     .stButton > button { background-color: #000 !important; color: #00d4ff !important; border: 2px solid #00d4ff !important; border-radius: 20px !important; width: 100% !important; font-weight: bold !important; }
     .stChatMessage { background: rgba(8, 18, 23, 0.9) !important; border: 1px solid #00d4ff !important; }
     audio { display: none !important; }
@@ -25,8 +26,6 @@ st.markdown("""
 # --- INICIALIZACIÓN ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-if "audio_key" not in st.session_state:
-    st.session_state.audio_key = 0
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
@@ -38,7 +37,11 @@ texto_manual = st.chat_input("Comando...")
 user_text = None
 if audio_data:
     try:
-        transcription = client.audio.transcriptions.create(file=("audio.webm", audio_data['bytes']), model="whisper-large-v3")
+        transcription = client.audio.transcriptions.create(
+            file=("audio.webm", audio_data['bytes']),
+            model="whisper-large-v3",
+            language="es" # <--- ESTO FUERZA EL ESPAÑOL ESTRICTO
+        )
         user_text = transcription.text
     except: pass
 elif texto_manual:
@@ -47,51 +50,46 @@ elif texto_manual:
 if user_text:
     try:
         res = client.chat.completions.create(
-            messages=[{"role": "system", "content": "Eres EDITH. Responde corto."}, {"role": "user", "content": user_text}],
+            messages=[{"role": "system", "content": "Eres EDITH. Responde corto y profesional."}, {"role": "user", "content": user_text}],
             model="llama-3.1-8b-instant"
         )
         respuesta = res.choices[0].message.content
-        st.session_state.chat_history.append(("Francis", user_text))
-        st.session_state.chat_history.append(("EDITH", respuesta))
-
-        # --- GENERACIÓN DE AUDIO (TU MÉTODO + REFUERZO JS) ---
+        
+        # --- GENERAR AUDIO ---
         tts = gTTS(text=respuesta, lang='es')
         audio_fp = BytesIO()
         tts.write_to_fp(audio_fp)
         audio_fp.seek(0)
         audio_b64 = base64.b64encode(audio_fp.read()).decode()
         
-        # ID dinámica para que el navegador no recicle el objeto anterior
-        st.session_state.audio_key += 1
-        current_id = f"aud_{st.session_state.audio_key}_{int(time.time())}"
+        # Guardamos el mensaje y adjuntamos el audio SOLO al mensaje nuevo
+        st.session_state.chat_history.append({"autor": "Francis", "msg": user_text, "audio": None})
+        st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta, "audio": audio_b64})
         
-        audio_html = f"""
-            <div id="audio_container_{st.session_state.audio_key}">
-                <audio id="{current_id}" autoplay="true" playsinline>
-                    <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                </audio>
-                <script>
-                    (function() {{
-                        var audio = document.getElementById("{current_id}");
-                        if (audio) {{
-                            audio.load();
-                            var playPromise = audio.play();
-                            if (playPromise !== undefined) {{
-                                playPromise.catch(error => {{
-                                    // Si falla el autoplay, intentamos dispararlo con cualquier toque
-                                    document.addEventListener('click', () => {{ audio.play(); }}, {{once: true}});
-                                }});
-                            }}
-                        }}
-                    }})();
-                </script>
-            </div>
-        """
-        st.markdown(audio_html, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"Error: {e}")
 
-# --- MOSTRAR CHAT ---
-for autor, msg in reversed(st.session_state.chat_history):
-    with st.chat_message("assistant" if autor == "EDITH" else "user", avatar="👓" if autor == "EDITH" else "👤"):
+# --- MOSTRAR CHAT Y EJECUTAR VOZ ---
+for item in reversed(st.session_state.chat_history):
+    autor = item["autor"]
+    msg = item["msg"]
+    avatar = "👓" if autor == "EDITH" else "👤"
+    
+    with st.chat_message("assistant" if autor == "EDITH" else "user", avatar=avatar):
         st.write(f"**{autor}:** {msg}")
+        
+        # Si el mensaje tiene un audio pendiente, lo inyectamos y lo destruimos
+        if item.get("audio"):
+            unique_id = f"aud_{int(time.time() * 1000)}"
+            audio_html = f"""
+                <audio id="{unique_id}" autoplay="true" playsinline>
+                    <source src="data:audio/mpeg;base64,{item['audio']}" type="audio/mpeg">
+                </audio>
+                <script>
+                    document.getElementById("{unique_id}").play();
+                </script>
+            """
+            st.markdown(audio_html, unsafe_allow_html=True)
+            
+            # DESTRUIMOS el audio de la memoria para que el iPhone no se bloquee en la siguiente respuesta
+            item["audio"] = None
