@@ -22,7 +22,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("👓 E.D.I.T.H.")
-st.write("Sistemas en línea. Lista para operar, Mary.")
+st.write("Sistemas en línea. Lista para operar, Francis.")
 
 # --- CONEXIÓN GROQ ---
 API_KEY = st.secrets["GROQ_API_KEY"]
@@ -63,7 +63,7 @@ elif texto_manual:
 if user_text:
     with st.spinner("Procesando..."):
         try:
-            prompt_sistema = "Eres E.D.I.T.H., la IA de los lentes de Tony Stark. Tu usuaria es Mary. Eres ejecutiva, inteligente y muy rápida. Responde corto."
+            prompt_sistema = "Eres E.D.I.T.H., la IA de los lentes de Tony Stark. Tu usuaria es Francis. Eres ejecutiva, inteligente y muy rápida. Responde corto."
             
             chat_completion = client.chat.completions.create(
                 messages=[
@@ -75,7 +75,7 @@ if user_text:
             respuesta_texto = chat_completion.choices[0].message.content
             
             # Guardamos en el historial
-            st.session_state.chat_history.append(("Mary", user_text))
+            st.session_state.chat_history.append(("Francis", user_text))
             st.session_state.chat_history.append(("EDITH", respuesta_texto))
             
             # --- SISTEMA DE VOZ (NUEVO) ---
