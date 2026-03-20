@@ -55,11 +55,11 @@ mis_herramientas = [
     {
         "type": "function",
         "function": {
-            "name": "buscar_en_internet",
-            "description": "Busca noticias actuales, deportes o cualquier dato de último minuto en internet.",
+            "name": "google", # <--- Le cambiamos el nombre a algo más simple
+            "description": "ACCESO TOTAL A INTERNET. Úsalo para noticias, deportes y datos de hoy.",
             "parameters": {
                 "type": "object",
-                "properties": {"consulta": {"type": "string", "description": "La búsqueda a realizar"}},
+                "properties": {"consulta": {"type": "string"}},
                 "required": ["consulta"]
             }
         }
