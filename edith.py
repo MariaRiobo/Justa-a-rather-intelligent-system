@@ -7,59 +7,37 @@ import base64
 import time
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="E.D.I.T.H. - Interfaz Táctica", page_icon="👓", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
 
-# --- CSS MAESTRO: ESTILO HOLOGRÁFICO CON SEPARACIÓN ---
+# --- CSS MAESTRO: INTERFAZ STARK & MICRÓFONO HOLOGRÁFICO ---
 st.markdown("""
     <style>
     /* 1. Fondo y Texto Base (Dark Mode Stark) */
     .stApp {
         background-color: #050a0e;
         color: #e0f7fa;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
 
-    /* 2. Avatar Animado (El Corazón de EDITH) */
-    .edith-orb {
-        display: block;
-        margin: 20px auto;
-        width: 100px;
-        height: 100px;
-        background: radial-gradient(circle, rgba(0,212,255,1) 0%, rgba(8,18,23,1) 70%);
-        border-radius: 50%;
-        box-shadow: 0 0 30px #00d4ff, 0 0 60px #00d4ff;
-        animation: pulse 3s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { transform: scale(0.95); box-shadow: 0 0 30px #00d4ff; }
-        70% { transform: scale(1.05); box-shadow: 0 0 50px #00d4ff, 0 0 20px #e0f7fa; }
-        100% { transform: scale(0.95); box-shadow: 0 0 30px #00d4ff; }
-    }
-
-    /* 3. Estilo del Chat (Holográfico y Separado) */
+    /* 2. Chat y Mensajes (Separado y Fluyente) */
     .stChatMessage {
         border-radius: 15px !important;
         border: 1px solid #00d4ff !important;
         box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
         margin-bottom: 20px !important;
         padding: 15px !important;
-    }
-    
-    /* Mensajes de EDITH (Izquierda - Cian) */
-    .stChatMessage[data-testid="stChatMessage"] {
         background-color: rgba(8, 18, 23, 0.9) !important;
     }
-    .stChatMessage[data-testid="stChatMessage"] [data-testid="stChatMessageAvatar"] {
+    .stChatMessage [data-testid="stChatMessageAvatar"] {
         border: 2px solid #00d4ff;
     }
 
     /* Mensajes de Francis (Derecha - Cyan Suave) */
-    .stChatMessage[data-testid="stChatMessageOther"] {
+    .stChatMessageOther {
         background-color: rgba(0, 212, 255, 0.1) !important;
         border-color: rgba(0, 212, 255, 0.5) !important;
     }
-    .stChatMessage[data-testid="stChatMessageOther"] [data-testid="stChatMessageAvatar"] {
+    
+    .stChatMessageOther [data-testid="stChatMessageAvatar"] {
         border: 2px solid rgba(0, 212, 255, 0.5);
     }
     
@@ -68,56 +46,45 @@ st.markdown("""
         font-weight: 300;
     }
 
-    /* 4. Barra Inferior Fija (Donde vive el botón) */
-    [data-testid="stVerticalBlock"] > div:last-child {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: rgba(5, 10, 14, 0.95);
-        border-top: 2px solid #00d4ff;
-        padding: 15px 10px 30px 10px;
-        z-index: 100;
-        box-shadow: 0 -10px 20px rgba(0, 212, 255, 0.3);
-    }
-    
-    /* Espacio para que el chat no quede tapado */
-    [data-testid="stVerticalBlock"] {
-        padding-bottom: 150px !important;
-    }
-
-    /* 5. Estilo Profesional del Botón */
+    /* 3. El Micrófono de Neón Táctil (Central y Fluyente) */
     .stButton>button { 
-        border-radius: 50px; 
-        height: 3.5em; 
-        width: 100%;
-        border: 2px solid #00d4ff; 
-        background-color: #081217; 
-        color: #00d4ff; 
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.3s ease;
-        box-shadow: 0px 0px 15px rgba(0, 212, 255, 0.5);
+        width: 100px; height: 100px;
+        border-radius: 50% !important;
+        border: none;
+        background-color: #081217;
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.5), inset 0 0 10px rgba(0, 212, 255, 0.3);
+        animation: pulse 3s infinite;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     
-    .stButton>button:hover {
-        background-color: #00d4ff;
-        color: #081217;
-        box-shadow: 0px 0px 30px #00d4ff;
+    /* Efecto Pulsante */
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+        70% { transform: scale(1.05); box-shadow: 0 0 40px rgba(0, 212, 255, 1), 0 0 15px #e0f7fa; }
+        100% { transform: scale(0.95); box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
     }
     
-    /* Reproductor de audio INVISIBLE */
-    audio { display: none !important; }
+    /* Cambiar a micrófono de neón cian al pulsar/mantener */
+    .stButton>button:active {
+        background-color: #00d4ff !important;
+        box-shadow: 0 0 60px #00d4ff !important;
+    }
+    
+    /* Ocultar el texto por completo */
+    .stButton>button span { display: none !important; }
 
-    /* Ocultar elementos innecesarios de Streamlit */
-    [data-testid="stHeader"], [data-testid="stSidebar"] { display: none; }
+    /* Ocultar elementos innecesarios */
+    audio { display: none !important; }
+    [data-testid="stHeader"] { display: none; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- CABECERA VISUAL ---
-st.markdown('<div class="edith-orb"></div>', unsafe_allow_html=True)
-st.write("<div style='text-align: center; color: #00d4ff; font-weight: 200;'>SISTEMAS E.D.I.T.H. OPERATIVOS</div>", unsafe_allow_html=True)
+st.write("<div style='text-align: center; color: #00d4ff; font-weight: 200;'>SISTEMAS E.D.I.T.H.</div>", unsafe_allow_html=True)
 st.write("<div style='text-align: center; font-size: 0.9em; margin-bottom: 30px;'>Francis, te escucho.</div>", unsafe_allow_html=True)
 
 # --- CONEXIÓN GROQ ---
@@ -132,8 +99,7 @@ if "chat_history" not in st.session_state:
 if "audio_key" not in st.session_state:
     st.session_state.audio_key = 0
 
-# --- HISTORIAL VISUAL (Con Separación Stark) ---
-# Usamos un contenedor para que el chat escrolee por detrás de la barra fija
+# --- HISTORIAL VISUAL (Fluyente y Separado) ---
 chat_container = st.container()
 with chat_container:
     # Mostramos el chat en orden inverso (más nuevo arriba)
@@ -143,18 +109,20 @@ with chat_container:
         with st.chat_message("assistant" if is_edith else "user", avatar="👓" if is_edith else "👤"):
             st.write(f"**{autor}:** {mensaje}")
 
-# --- BARRA INFERIOR FIJA CON EL BOTÓN ---
-with st.container():
-    # Usamos columnas para centrar el botón
-    col1, col2, col3 = st.columns([1,3,1])
-    with col2:
-        audio_data = mic_recorder(
-            start_prompt="🔴 INICIAR ESCANEO",
-            stop_prompt="🟢 PROCESAR COMANDO",
-            key='recorder',
-            just_once=True,
-            use_container_width=True
-        )
+# --- ENTRADA DE VOZ (Micrófono Táctil Central) ---
+st.write("---") # Separador visual
+st.write("<p style='text-align:center; font-size:0.8em; opacity:0.6; margin-bottom:0;'>Habla ahora</p>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns([2,1,2]) # Centramos el orbe
+with col2:
+    # El Botón de la grabadora es ahora el micrófono de neón
+    audio_data = mic_recorder(
+        # Usamos el orbe de neón *como* el botón táctil del micrófono
+        start_prompt="🔴 INICIAR ESCANEO",
+        stop_prompt="🟢 PROCESAR COMANDO",
+        key='recorder',
+        just_once=True,
+        use_container_width=False # El orbe es pequeño
+    )
 
 # --- LÓGICA DE PROCESAMIENTO ---
 user_text = None
