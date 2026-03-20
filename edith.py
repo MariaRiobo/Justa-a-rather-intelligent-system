@@ -23,8 +23,11 @@ st.markdown("""
     <h2 style="text-align: center; color: #00d4ff; letter-spacing: 5px;">E.D.I.T.H.</h2>
     """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN ---
-if "chat_history" not in st.session_state:
+# --- INICIALIZACIÓN CON PURGA DE MEMORIA ---
+# Si hay historial viejo guardado con el formato anterior, lo borramos para evitar el TypeError
+if "chat_history" not in st.session_state or (
+    len(st.session_state.chat_history) > 0 and isinstance(st.session_state.chat_history[0], tuple)
+):
     st.session_state.chat_history = []
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -40,7 +43,7 @@ if audio_data:
         transcription = client.audio.transcriptions.create(
             file=("audio.webm", audio_data['bytes']),
             model="whisper-large-v3",
-            language="es" # <--- ESTO FUERZA EL ESPAÑOL ESTRICTO
+            language="es" # Fuerza a Whisper a escuchar en español
         )
         user_text = transcription.text
     except: pass
@@ -62,7 +65,7 @@ if user_text:
         audio_fp.seek(0)
         audio_b64 = base64.b64encode(audio_fp.read()).decode()
         
-        # Guardamos el mensaje y adjuntamos el audio SOLO al mensaje nuevo
+        # Guardamos el mensaje en formato diccionario
         st.session_state.chat_history.append({"autor": "Francis", "msg": user_text, "audio": None})
         st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta, "audio": audio_b64})
         
@@ -91,5 +94,5 @@ for item in reversed(st.session_state.chat_history):
             """
             st.markdown(audio_html, unsafe_allow_html=True)
             
-            # DESTRUIMOS el audio de la memoria para que el iPhone no se bloquee en la siguiente respuesta
+            # DESTRUIMOS el audio de la memoria para no bloquear respuestas futuras en iOS
             item["audio"] = None
