@@ -26,12 +26,28 @@ def obtener_cotizacion_dolar():
         return "Error de conexión con el sensor de divisas."
 
 def obtener_fecha_hora():
-    """Retorna la fecha y hora actual en Buenos Aires."""
-    # Parche de sincronización usando pytz
-    zona = pytz.timezone("America/Argentina/Buenos_Aires")
-    ahora = datetime.datetime.now(zona)
-    # Formato numérico estándar para que la IA no se confunda con el idioma del servidor
-    return ahora.strftime("%Y-%m-%d %H:%M:%S")
+    """Retorna la fecha y hora exacta consultando un reloj atómico externo."""
+    try:
+        # Consultamos la hora exacta a un servidor mundial independiente
+        url = "http://worldtimeapi.org/api/timezone/America/Argentina/Buenos_Aires"
+        res = requests.get(url, timeout=5)
+        
+        if res.status_code == 200:
+            datos = res.json()
+            # La API nos devuelve un formato ISO, lo acomodamos
+            fecha_hora_iso = datos["datetime"]
+            # Cortamos los microsegundos para que quede limpio: YYYY-MM-DDTHH:MM:SS
+            fecha_hora_limpia = fecha_hora_iso.split(".")[0].replace("T", " ")
+            return fecha_hora_limpia
+        else:
+            # Plan B (Respaldo): Si el servidor externo cae, usamos pytz
+            import pytz
+            zona = pytz.timezone("America/Argentina/Buenos_Aires")
+            ahora = datetime.datetime.now(zona)
+            return ahora.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        return f"Error en el enlace temporal: {str(e)}"
+        
 
 def obtener_clima(ciudad="Buenos Aires"):
     """Consulta el clima actual por satélite."""
