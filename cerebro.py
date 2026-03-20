@@ -26,9 +26,10 @@ def pensar_respuesta(texto_usuario, historial):
     contexto_inyectado = SYSTEM_PROMPT
     
     if datos_extra:
-        contexto_inyectado += f"\n\n--- INFORMACIÓN DE CAMPO RECUPERADA ---\n{datos_extra}\n"
-        contexto_inyectado += "\nINSTRUCCIÓN CRÍTICA: Responde basándote en los DATOS DE CAMPO de arriba. No digas que no tienes internet."
-
+       contexto_inyectado += "\nINSTRUCCIÓN DE PRIORIDAD ALTA: Analiza los 'DATOS DE CAMPO' de arriba. "
+        contexto_inyectado += "Si en los textos de las fuentes (como Olé o ESPN) aparece un marcador o un resultado, INFÓRMALO DE INMEDIATO como si lo estuvieras viendo en una pantalla táctica. "
+        contexto_inyectado += "No me digas que no tienes la información si el resultado aparece en los fragmentos de texto."
+        
     # Preparamos los mensajes para Groq
     mensajes_api = [{"role": "system", "content": contexto_inyectado}]
     
