@@ -1,4 +1,3 @@
-# cerebro.py
 import streamlit as st
 from groq import Groq
 import json
@@ -19,16 +18,19 @@ def transcribir_audio(audio_bytes):
         return None
 
 def pensar_respuesta(texto_usuario, historial):
-    instruccion_critica = "\nIMPORTANTE: Tienes herramientas conectadas. Si el usuario pregunta el CLIMA o la HORA, es OBLIGATORIO que uses las 'tools' (obtener_clima o obtener_fecha_hora). NO inventes ni deduzcas la respuesta."
+    # Instrucción de alta prioridad para que EDITH use sus sensores
+    instruccion_critica = "\nIMPORTANTE: Tienes herramientas de CLIMA, HORA, WIKIPEDIA e INTERNET. Si el usuario pregunta algo que no sabes o es actual, USA TUS HERRAMIENTAS obligatoriamente."
     
     mensajes_api = [{"role": "system", "content": SYSTEM_PROMPT + instruccion_critica}]
     
+    # Mantener memoria corta para evitar confusiones
     for item in historial[-4:]:
         role = "assistant" if item.get("autor") == "EDITH" else "user"
         mensajes_api.append({"role": role, "content": item.get("msg")})
         
     mensajes_api.append({"role": "user", "content": texto_usuario})
 
+    # FASE 1: Decisión de herramienta
     res = client.chat.completions.create(
         messages=mensajes_api,
         model="llama-3.3-70b-versatile",
@@ -38,7 +40,8 @@ def pensar_respuesta(texto_usuario, historial):
     
     mensaje_respuesta = res.choices[0].message
 
-  if mensaje_respuesta.tool_calls:
+    # Si EDITH decide activar un brazo mecánico (herramienta)
+    if mensaje_respuesta.tool_calls:
         mensajes_api.append({
             "role": "assistant",
             "content": mensaje_respuesta.content or "",
@@ -55,20 +58,17 @@ def pensar_respuesta(texto_usuario, historial):
             nombre_funcion = tool_call.function.name
             argumentos = json.loads(tool_call.function.arguments)
             
-            # --- RUTAS DE HERRAMIENTAS ---
-          # ... (dentro del bucle de tool_calls) ...
+            # Ejecución según la herramienta elegida
             if nombre_funcion == "obtener_fecha_hora":
                 resultado = herramientas.obtener_fecha_hora()
             elif nombre_funcion == "obtener_clima":
                 resultado = herramientas.obtener_clima(argumentos.get("ciudad", "Buenos Aires"))
             elif nombre_funcion == "buscar_en_wikipedia":
                 resultado = herramientas.buscar_en_wikipedia(argumentos.get("consulta"))
-            elif nombre_funcion == "buscar_en_internet": # <--- NUEVA RUTA
+            elif nombre_funcion == "buscar_en_internet":
                 resultado = herramientas.buscar_en_internet(argumentos.get("consulta"))
             else:
-                resultado = "Herramienta no encontrada."
-            # ...
-            # -----------------------------
+                resultado = "Error: Herramienta no mapeada."
                 
             mensajes_api.append({
                 "tool_call_id": tool_call.id,
@@ -77,8 +77,11 @@ def pensar_respuesta(texto_usuario, historial):
                 "content": str(resultado)
             })
             
+        # FASE 2: Respuesta final con los datos obtenidos
         res_final = client.chat.completions.create(
             messages=mensajes_api,
             model="llama-3.3-70b-versatile"
         )
         return res_final.choices[0].message.content
+
+    return mensaje_respuesta.content
