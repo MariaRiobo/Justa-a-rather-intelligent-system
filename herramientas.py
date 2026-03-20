@@ -3,6 +3,8 @@ import requests
 import pytz
 import wikipedia
 from bs4 import BeautifulSoup
+import PyPDF2
+import io
 
 # Configuración básica
 wikipedia.set_lang("es")
@@ -134,3 +136,28 @@ def buscar_en_wikipedia(consulta):
         return f"Archivo Wikipedia: {wikipedia.summary(consulta, sentences=2)}"
     except:
         return f"No hay registros históricos sobre '{consulta}'."
+
+def extraer_texto(archivo):
+    """Extrae el texto de archivos PDF o TXT subidos a través de Streamlit."""
+    try:
+        nombre = archivo.name.lower()
+        
+        # Si es un archivo de texto plano
+        if nombre.endswith('.txt'):
+            return archivo.getvalue().decode("utf-8")
+        
+        # Si es un PDF
+        elif nombre.endswith('.pdf'):
+            lector = PyPDF2.PdfReader(io.BytesIO(archivo.getvalue()))
+            texto = ""
+            for pagina in lector.pages:
+                texto_pagina = pagina.extract_text()
+                if texto_pagina:
+                    texto += texto_pagina + "\n"
+            return texto
+            
+        else:
+            return "Error: Formato de archivo no soportado. Usa PDF o TXT."
+            
+    except Exception as e:
+        return f"Error en el escáner de documentos: {str(e)}"
