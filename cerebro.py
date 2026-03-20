@@ -17,7 +17,7 @@ def pensar_respuesta(texto_usuario, historial):
             datos_extra = herramientas.obtener_cotizacion_dolar()
             
     # PRIORIDAD 2: Rastreo Meteorológico
-    elif any(w in texto_min for w in ["clima", "temperatura", "tiempo"]):
+    elif any(w in texto_min for w in ["clima", "temperatura", "tiempo", "llover", "lluvia", "pronóstico", "mañana", "semana"]):
         with st.spinner("Consultando satélites meteorológicos..."):
             datos_extra = herramientas.obtener_clima()
             
