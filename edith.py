@@ -64,7 +64,7 @@ elif texto_manual:
 if user_text:
     with st.spinner("Procesando..."):
         try:
-            prompt_sistema = "Eres E.D.I.T.H., la IA de los lentes de Tony Stark. Tu usuaria es Francis. Eres ejecutiva, inteligente y muy rápida. Responde corto."
+            prompt_sistema = "Eres E.D.I.T.H., la IA de los lentes de Tony Stark. Tu usuario es Francis. Eres ejecutiva, inteligente y muy rápida. Responde corto."
             
             chat_completion = client.chat.completions.create(
                 messages=[
@@ -79,11 +79,11 @@ if user_text:
             st.session_state.chat_history.append(("Francis", user_text))
             st.session_state.chat_history.append(("EDITH", respuesta_texto))
             
-          # --- SISTEMA DE VOZ (IPHONE FIX) ---
+            # --- SISTEMA DE VOZ (IPHONE FIX) ---
             tts = gTTS(text=respuesta_texto, lang='es')
             audio_fp = BytesIO()
             tts.write_to_fp(audio_fp)
-            audio_fp.seek(0) # Rebobinamos la cinta para que no esté vacía
+            audio_fp.seek(0) # Rebobinamos la cinta
             
             # Truco de camuflaje para iOS (Base64)
             audio_b64 = base64.b64encode(audio_fp.read()).decode()
@@ -93,6 +93,9 @@ if user_text:
                 </audio>
             '''
             st.markdown(audio_html, unsafe_allow_html=True)
+            
+        except Exception as e:
+            st.error(f"Error en enlace satelital: {e}")
 
 # --- HISTORIAL VISUAL ---
 for autor, mensaje in st.session_state.chat_history[::-1]:
