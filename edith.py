@@ -1,6 +1,7 @@
 # app.py (Guardado en tu caso como edith.py)
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
+import herramientas
 
 # Módulos Stark
 from config import CSS_STARK
