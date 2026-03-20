@@ -3,6 +3,7 @@ from streamlit_mic_recorder import mic_recorder
 from groq import Groq
 from gtts import gTTS
 from io import BytesIO
+import base64
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered", initial_sidebar_state="collapsed")
@@ -78,14 +79,20 @@ if user_text:
             st.session_state.chat_history.append(("Francis", user_text))
             st.session_state.chat_history.append(("EDITH", respuesta_texto))
             
-            # --- SISTEMA DE VOZ (NUEVO) ---
+          # --- SISTEMA DE VOZ (IPHONE FIX) ---
             tts = gTTS(text=respuesta_texto, lang='es')
             audio_fp = BytesIO()
             tts.write_to_fp(audio_fp)
-            st.audio(audio_fp, format='audio/mp3', autoplay=True)
+            audio_fp.seek(0) # Rebobinamos la cinta para que no esté vacía
             
-        except Exception as e:
-            st.error(f"Error en enlace satelital: {e}")
+            # Truco de camuflaje para iOS (Base64)
+            audio_b64 = base64.b64encode(audio_fp.read()).decode()
+            audio_html = f'''
+                <audio controls autoplay>
+                    <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                </audio>
+            '''
+            st.markdown(audio_html, unsafe_allow_html=True)
 
 # --- HISTORIAL VISUAL ---
 for autor, mensaje in st.session_state.chat_history[::-1]:
