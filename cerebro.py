@@ -38,7 +38,7 @@ def pensar_respuesta(texto_usuario, historial):
     
     mensaje_respuesta = res.choices[0].message
 
-    if mensaje_respuesta.tool_calls:
+  if mensaje_respuesta.tool_calls:
         mensajes_api.append({
             "role": "assistant",
             "content": mensaje_respuesta.content or "",
@@ -46,10 +46,7 @@ def pensar_respuesta(texto_usuario, historial):
                 {
                     "id": tc.id,
                     "type": "function",
-                    "function": {
-                        "name": tc.function.name,
-                        "arguments": tc.function.arguments
-                    }
+                    "function": {"name": tc.function.name, "arguments": tc.function.arguments}
                 } for tc in mensaje_respuesta.tool_calls
             ]
         })
@@ -58,13 +55,16 @@ def pensar_respuesta(texto_usuario, historial):
             nombre_funcion = tool_call.function.name
             argumentos = json.loads(tool_call.function.arguments)
             
+            # --- RUTAS DE HERRAMIENTAS ---
             if nombre_funcion == "obtener_fecha_hora":
                 resultado = herramientas.obtener_fecha_hora()
             elif nombre_funcion == "obtener_clima":
-                ciudad = argumentos.get("ciudad", "Buenos Aires")
-                resultado = herramientas.obtener_clima(ciudad)
+                resultado = herramientas.obtener_clima(argumentos.get("ciudad", "Buenos Aires"))
+            elif nombre_funcion == "buscar_en_wikipedia":
+                resultado = herramientas.buscar_en_wikipedia(argumentos.get("consulta"))
             else:
-                resultado = "Herramienta fallida."
+                resultado = "Herramienta no encontrada."
+            # -----------------------------
                 
             mensajes_api.append({
                 "tool_call_id": tool_call.id,
@@ -78,5 +78,3 @@ def pensar_respuesta(texto_usuario, historial):
             model="llama-3.3-70b-versatile"
         )
         return res_final.choices[0].message.content
-
-    return mensaje_respuesta.content
