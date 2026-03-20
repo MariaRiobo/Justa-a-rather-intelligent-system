@@ -42,14 +42,15 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         contexto_inyectado += "No digas que no tienes internet."
 
     # Inyección 2: Documentos escaneados (¡NUEVO!)
-        # Inyección 2: Documentos escaneados
+           # Inyección 2: Documentos escaneados
     if texto_documento:
         contexto_inyectado += f"\n\n--- DOCUMENTO ESCANEADO EN MEMORIA ---\n"
-        contexto_inyectado += "El usuario ha subido un documento. Úsalo como base de conocimiento principal.\n"
-        contexto_inyectado += "REGLA CRÍTICA DE VOZ: Tu respuesta será leída en voz alta por un sintetizador. "
-        contexto_inyectado += "DEBES ser extremadamente conciso. Resume de qué trata el archivo en un máximo de 3 oraciones cortas y fluidas. "
-        contexto_inyectado += "No hagas listas largas ni viñetas, habla como un asistente real. Si el usuario quiere más detalles, te los pedirá después.\n"
-        contexto_inyectado += f"{texto_documento[:10000]}\n"
+        # 1. Primero le pasamos el texto (lo bajamos a 8000 para dejar margen)
+        contexto_inyectado += f"{texto_documento[:8000]}\n"
+        # 2. DESPUÉS le damos la orden estricta para que no la olvide
+        contexto_inyectado += "\n[DIRECTIVA DE SISTEMA CRÍTICA]: Acabas de leer el documento. "
+        contexto_inyectado += "Tu respuesta DEBE ser hablada. Resume el contenido en un MÁXIMO ABSOLUTO de 3 oraciones cortas. "
+        contexto_inyectado += "ESTÁ TOTALMENTE PROHIBIDO usar listas, viñetas o textos largos. Ve directo al grano."
 
     # Empaquetamos todo el contexto en el Sistema
     mensajes_api = [{"role": "system", "content": contexto_inyectado}]
