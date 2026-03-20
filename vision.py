@@ -27,11 +27,11 @@ def analizar_imagen(imagen_bytes, texto_usuario):
         }
     ]
     
-   # 3. Llamada al modelo Llama 3.2 Vision superior
+   # 3. Llamada al modelo Llama 3.2 Vision (Versión Final de Producción)
     try:
         res = client.chat.completions.create(
             messages=mensajes_api,
-            model="llama-3.2-90b-vision-preview", # <--- EL NUEVO LENTE DE 90 BILLONES
+            model="llama-3.2-11b-vision-instruct", # <--- EL NUEVO LENTE DEFINITIVO
             temperature=0.6,
             max_tokens=512
         )
