@@ -20,6 +20,11 @@ def pensar_respuesta(texto_usuario, historial):
     elif any(w in texto_min for w in ["clima", "temperatura", "tiempo"]):
         with st.spinner("Consultando satélites meteorológicos..."):
             datos_extra = herramientas.obtener_clima()
+            
+    # PRIORIDAD NUEVA: Reloj del Sistema (¡AQUÍ ESTÁ EL ARREGLO!)
+    elif any(w in texto_min for w in ["hora", "fecha", "día", "dia", "qué hora"]):
+        with st.spinner("Sincronizando reloj atómico..."):
+            datos_extra = herramientas.obtener_fecha_hora()        
 
     # PRIORIDAD 3: Rastreo Web General (Boca, noticias, etc.)
     elif any(w in texto_min for w in ["boca", "river", "partido", "resultado", "jugó", "noticias", "precio", "quien es", "quién es"]):
