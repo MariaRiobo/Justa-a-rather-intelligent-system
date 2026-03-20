@@ -1,11 +1,16 @@
-# herramientas.py
 import datetime
 import requests
+from zoneinfo import ZoneInfo # <--- El nuevo módulo para zonas horarias
 
 def obtener_fecha_hora():
-    """Devuelve la fecha y hora actual exacta."""
-    ahora = datetime.datetime.now()
+    """Devuelve la fecha y hora actual exacta en la base de operaciones."""
+    # Aquí le decimos que tu base está en Buenos Aires (Cámbialo si estás en otro país)
+    zona_horaria = ZoneInfo("America/Argentina/Buenos_Aires") 
+    ahora = datetime.datetime.now(zona_horaria)
     return ahora.strftime("%A, %d de %B de %Y, %H:%M:%S")
+
+def obtener_clima(ciudad="Buenos Aires"):
+# ... (El resto del archivo queda igual hacia abajo) ...
 
 def obtener_clima(ciudad="Buenos Aires"):
     """Se conecta a la red para obtener el clima actual de una ciudad."""
