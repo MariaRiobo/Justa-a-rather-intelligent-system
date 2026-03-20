@@ -18,16 +18,14 @@ def transcribir_audio(audio_bytes):
         return None
 
 def pensar_respuesta(texto_usuario, historial):
-    instruccion_critica = "\nORDEN DIRECTA: Si no conoces la respuesta, USA 'buscar_en_internet'. Responde siempre en JSON de herramienta si es necesario."
+    # Simplificamos los mensajes al máximo para evitar el error 400
+    mensajes_api = [{"role": "system", "content": SYSTEM_PROMPT}]
     
-    mensajes_api = [{"role": "system", "content": SYSTEM_PROMPT + instruccion_critica}]
-    for item in historial[-4:]:
-        role = "assistant" if item.get("autor") == "EDITH" else "user"
-        mensajes_api.append({"role": role, "content": item.get("msg")})
+    # Solo mandamos el último mensaje para que no se maree con fallos anteriores
     mensajes_api.append({"role": "user", "content": texto_usuario})
 
     try:
-        # FASE 1: Intento de llamada
+        # FASE 1: Llamada a la herramienta
         res = client.chat.completions.create(
             messages=mensajes_api,
             model="llama-3.3-70b-versatile",
@@ -37,21 +35,28 @@ def pensar_respuesta(texto_usuario, historial):
         
         mensaje_respuesta = res.choices[0].message
 
+        # Si el modelo decide usar una herramienta
         if mensaje_respuesta.tool_calls:
-            # Blindaje: Limpiamos y registramos las llamadas
+            # Agregamos la respuesta del asistente (la intención de usar la tool)
             mensajes_api.append(mensaje_respuesta)
             
             for tool_call in mensaje_respuesta.tool_calls:
                 nombre_f = tool_call.function.name
                 args = json.loads(tool_call.function.arguments)
                 
-                # Ejecución segura
-                if nombre_f == "obtener_fecha_hora": resultado = herramientas.obtener_fecha_hora()
-                elif nombre_f == "obtener_clima": resultado = herramientas.obtener_clima(args.get("ciudad", "Buenos Aires"))
-                elif nombre_f == "buscar_en_wikipedia": resultado = herramientas.buscar_en_wikipedia(args.get("consulta"))
-                elif nombre_f == "buscar_en_internet": resultado = herramientas.buscar_en_internet(args.get("consulta"))
-                else: resultado = "Error de mapeo."
+                # Ejecución de la lógica
+                if nombre_f == "obtener_fecha_hora":
+                    resultado = herramientas.obtener_fecha_hora()
+                elif nombre_f == "obtener_clima":
+                    resultado = herramientas.obtener_clima(args.get("ciudad", "Buenos Aires"))
+                elif nombre_f == "buscar_en_wikipedia":
+                    resultado = herramientas.buscar_en_wikipedia(args.get("consulta"))
+                elif nombre_f == "buscar_en_internet":
+                    resultado = herramientas.buscar_en_internet(args.get("consulta"))
+                else:
+                    resultado = "Error de sistema."
 
+                # Agregamos el resultado de la herramienta al flujo
                 mensajes_api.append({
                     "tool_call_id": tool_call.id,
                     "role": "tool",
@@ -59,7 +64,7 @@ def pensar_respuesta(texto_usuario, historial):
                     "content": str(resultado)
                 })
             
-            # FASE 2: Respuesta final con datos reales
+            # FASE 2: Generar respuesta final basada en los datos obtenidos
             res_final = client.chat.completions.create(
                 messages=mensajes_api,
                 model="llama-3.3-70b-versatile"
@@ -69,5 +74,5 @@ def pensar_respuesta(texto_usuario, historial):
         return mensaje_respuesta.content
 
     except Exception as e:
-        # Protocolo de recuperación ante error 400
-        return f"Error de enlace: {str(e)}. Intente reformular la orden, señor."
+        # Si vuelve a fallar el formato, intentamos una respuesta directa sin herramientas
+        return f"Error en los sistemas de búsqueda, señor. Detalle: {str(e)}"
