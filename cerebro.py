@@ -32,6 +32,6 @@ def pensar_respuesta(texto_usuario, historial):
 
     res = client.chat.completions.create(
         messages=mensajes_api,
-        model="llama-3.1-8b-instant"
+        model="llama-3.3-70b-versatile"
     )
     return res.choices[0].message.content
