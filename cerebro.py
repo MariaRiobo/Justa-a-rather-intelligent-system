@@ -42,10 +42,13 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         contexto_inyectado += "No digas que no tienes internet."
 
     # Inyección 2: Documentos escaneados (¡NUEVO!)
+        # Inyección 2: Documentos escaneados
     if texto_documento:
         contexto_inyectado += f"\n\n--- DOCUMENTO ESCANEADO EN MEMORIA ---\n"
-        contexto_inyectado += "El usuario ha subido un documento. Úsalo como base de conocimiento principal para responder a su petición:\n"
-        # Le pasamos hasta 10,000 caracteres para no sobrecargar el enlace neuronal (Groq)
+        contexto_inyectado += "El usuario ha subido un documento. Úsalo como base de conocimiento principal.\n"
+        contexto_inyectado += "REGLA CRÍTICA DE VOZ: Tu respuesta será leída en voz alta por un sintetizador. "
+        contexto_inyectado += "DEBES ser extremadamente conciso. Resume de qué trata el archivo en un máximo de 3 oraciones cortas y fluidas. "
+        contexto_inyectado += "No hagas listas largas ni viñetas, habla como un asistente real. Si el usuario quiere más detalles, te los pedirá después.\n"
         contexto_inyectado += f"{texto_documento[:10000]}\n"
 
     # Empaquetamos todo el contexto en el Sistema
