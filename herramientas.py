@@ -2,66 +2,49 @@ import datetime
 import requests
 from zoneinfo import ZoneInfo
 import wikipedia
-from duckduckgo_search import DDGS # <--- El nuevo motor de búsqueda
+from duckduckgo_search import DDGS
 
+# Configuración básica
 wikipedia.set_lang("es")
 
 def obtener_fecha_hora():
-    zona_horaria = ZoneInfo("America/Argentina/Buenos_Aires") 
-    ahora = datetime.datetime.now(zona_horaria)
+    """Retorna la fecha y hora actual en Buenos Aires."""
+    zona = ZoneInfo("America/Argentina/Buenos_Aires")
+    ahora = datetime.datetime.now(zona)
     return ahora.strftime("%A, %d de %B de %Y, %H:%M:%S")
 
 def obtener_clima(ciudad="Buenos Aires"):
+    """Consulta el clima actual por satélite."""
     try:
-        ciudad_formateada = ciudad.replace(" ", "+")
-        url = f"https://wttr.in/{ciudad_formateada}?format=%C+%t"
+        ciudad_f = ciudad.replace(" ", "+")
+        url = f"https://wttr.in/{ciudad_f}?format=%C+%t"
         headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(url, headers=headers, timeout=10)
-        return f"El clima en {ciudad} es: {response.text.strip()}" if response.status_code == 200 else "Error en satélite."
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            return f"Clima en {ciudad}: {res.text.strip()}"
+        return "Sensores meteorológicos fuera de línea."
     except:
-        return "Fallo de conexión meteorológica."
-
-def buscar_en_wikipedia(consulta):
-    try:
-        resumen = wikipedia.summary(consulta, sentences=2)
-        return f"Según mis registros sobre '{consulta}': {resumen}"
-    except:
-        return f"No encontré datos específicos en Wikipedia sobre '{consulta}'."
+        return "Error de conexión con el satélite climático."
 
 def buscar_en_internet(consulta):
-    """Busca en tiempo real con un motor de búsqueda más agresivo."""
+    """Rastreo rápido de la red global."""
     try:
-        from duckduckgo_search import DDGS
         with DDGS() as ddgs:
-            # Forzamos la búsqueda en una región específica (Argentina) para mayor precisión
-            resultados = [r for r in ddgs.text(f"{consulta} actualidad resultados", region="ar-es", max_results=5)]
-            
+            # Buscamos noticias y resultados recientes
+            resultados = [r for r in ddgs.text(f"{consulta} actualidad", region="ar-es", max_results=3)]
             if not resultados:
-                return "Escaneo fallido: No hay datos recientes en la red superficial."
+                return "No se encontraron transmisiones recientes sobre ese tema."
             
-            # Consolidamos un reporte más robusto
-            reporte = f"REPORTE TÁCTICO SOBRE: {consulta}\n"
-            for i, r in enumerate(resultados, 1):
-                reporte += f"Fuentes {i}: {r['title']} - {r['body']}\n"
-            
+            reporte = ""
+            for r in resultados:
+                reporte += f"- {r['title']}: {r['body']}\n"
             return reporte
     except Exception as e:
-        return f"Error en los servidores de búsqueda: {str(e)}"
-        
-mis_herramientas = [
-    {"type": "function", "function": {"name": "obtener_fecha_hora", "description": "Obtiene la fecha y hora actual.", "parameters": {"type": "object", "properties": {}}}},
-    {"type": "function", "function": {"name": "obtener_clima", "description": "Busca el clima de una ciudad.", "parameters": {"type": "object", "properties": {"ciudad": {"type": "string"}}, "required": ["ciudad"]}}},
-    {"type": "function", "function": {"name": "buscar_en_wikipedia", "description": "Información histórica o enciclopédica.", "parameters": {"type": "object", "properties": {"consulta": {"type": "string"}}, "required": ["consulta"]}}},
-    {
-        "type": "function",
-        "function": {
-            "name": "google", # <--- Le cambiamos el nombre a algo más simple
-            "description": "ACCESO TOTAL A INTERNET. Úsalo para noticias, deportes y datos de hoy.",
-            "parameters": {
-                "type": "object",
-                "properties": {"consulta": {"type": "string"}},
-                "required": ["consulta"]
-            }
-        }
-    }
-]
+        return f"Interferencia en la red de búsqueda: {str(e)}"
+
+def buscar_en_wikipedia(consulta):
+    """Consulta la base de datos histórica."""
+    try:
+        return f"Archivo Wikipedia: {wikipedia.summary(consulta, sentences=2)}"
+    except:
+        return f"No hay registros históricos sobre '{consulta}'."
