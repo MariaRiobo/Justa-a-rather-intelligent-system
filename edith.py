@@ -95,23 +95,32 @@ if user_text or imagen_actual:
             # Procesamiento lógico normal
             respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, texto_documento)
         
-        # Guardamos en el historial
+               # Guardamos en el historial visual
         st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
         st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
         
-        # Generamos la voz
-        audio_b64 = voz.generar_audio(respuesta)
-        st.session_state.audio_key += 1
+        # --- FILTRO PURIFICADOR DE VOZ ---
+        # Le quitamos asteriscos, numerales y guiones que traban al sintetizador
+        texto_limpio = respuesta.replace("*", "").replace("#", "").replace("_", "")
         
-        audio_html = f"""
-            <audio autoplay key="{st.session_state.audio_key}">
-                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-            </audio>
-        """
-        audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
-        
+        try:
+            # Generamos la voz con el texto LIMPIO
+            audio_b64 = voz.generar_audio(texto_limpio)
+            st.session_state.audio_key += 1
+            
+            audio_html = f"""
+                <audio autoplay key="audio_{st.session_state.audio_key}">
+                    <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                </audio>
+            """
+            audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
+            
+        except Exception as error_voz:
+            # Si la voz falla, ahora nos avisará con un cartel amarillo sin romper la app
+            st.warning(f"🔇 Módulo de voz saturado: {error_voz}")
+            
     except Exception as e:
-        st.error(f"Error del sistema: {e}")
+        st.error(f"Error general del sistema: {e}")
 
 # --- MOSTRAR CHAT ---
 for item in reversed(st.session_state.chat_history):
@@ -121,3 +130,4 @@ for item in reversed(st.session_state.chat_history):
     
     with st.chat_message("assistant" if autor == "EDITH" else "user", avatar=avatar):
         st.write(f"**{autor}:** {msg}")
+
