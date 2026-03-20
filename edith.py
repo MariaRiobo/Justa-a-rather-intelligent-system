@@ -18,9 +18,35 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "audio_key" not in st.session_state:
     st.session_state.audio_key = 0
+if "sistemas_activados" not in st.session_state:
+    st.session_state.sistemas_activados = False
 
 audio_placeholder = st.empty()
 
+# --- PROTOCOLO DE ENCENDIDO (NUEVO) ---
+if not st.session_state.sistemas_activados:
+    mensaje_bienvenida = "Sistemas activados. Soy EDITH. Even dead I'm the hero. Estoy lista para servirte, Francis."
+    
+    try:
+        # Generamos el audio de bienvenida
+        audio_b64 = voz.generar_audio(mensaje_bienvenida)
+        st.session_state.audio_key += 1
+        
+        audio_html = f"""
+            <audio autoplay key="init_{st.session_state.audio_key}">
+                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+            </audio>
+        """
+        audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
+        
+        # Agregamos el mensaje al chat visual
+        st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
+        
+    except Exception as e:
+        st.error(f"Fallo en el sintetizador de voz inicial: {e}")
+        
+    # Bloqueamos el saludo para que no lo repita al interactuar
+    st.session_state.sistemas_activados = True
 # --- SENSORES ÓPTICOS (NUEVO) ---
 with st.expander("👁️ Activar Sensores Ópticos"):
     opcion_vision = st.radio("Modo de entrada:", ["Cámara", "Archivo"], horizontal=True)
