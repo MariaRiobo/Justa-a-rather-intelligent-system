@@ -7,9 +7,10 @@ import herramientas
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def pensar_respuesta(texto_usuario, historial):
-    # --- PROTOCOLO DE FORZADO ---
-    palabras_clave = ["boca", "resultado", "partido", "dolar", "clima", "quien es", "noticias", "precio"]
-    usa_herramienta_forzado = any(word in texto_usuario.lower() for word in palabras_clave)
+    # --- DETECTOR DE NECESIDAD DE INFORMACIÓN ---
+    # Si el usuario pregunta algo que requiere datos externos, forzamos el uso de la tool.
+    palabras_clima = ["clima", "tiempo", "temperatura"]
+    palabras_internet = ["boca", "dolar", "partido", "resultado", "noticias", "precio", "quien es", "que paso"]
     
     mensajes_api = [{"role": "system", "content": SYSTEM_PROMPT}]
     for item in historial[-2:]:
@@ -18,17 +19,21 @@ def pensar_respuesta(texto_usuario, historial):
     mensajes_api.append({"role": "user", "content": texto_usuario})
 
     try:
-        # Si detectamos que necesita info real, forzamos la herramienta "google"
-        tool_config = "auto"
-        if usa_herramienta_forzado:
-            # Aquí obligamos al modelo a que use SI O SI una herramienta
-            tool_config = {"type": "function", "function": {"name": "google"}}
+        # CONFIGURACIÓN DE HERRAMIENTA FORZADA
+        t_choice = "auto"
+        # Si hablas de Boca o noticias, la obligamos a usar "google"
+        if any(w in texto_usuario.lower() for w in palabras_internet):
+            t_choice = {"type": "function", "function": {"name": "google"}}
+        # Si hablas del clima, la obligamos a usar "obtener_clima"
+        elif any(w in texto_usuario.lower() for w in palabras_clima):
+            t_choice = {"type": "function", "function": {"name": "obtener_clima"}}
 
+        # FASE 1: Ejecución
         res = client.chat.completions.create(
             messages=mensajes_api,
             model="llama-3.3-70b-versatile",
             tools=herramientas.mis_herramientas,
-            tool_choice=tool_config # <--- AQUÍ ESTÁ EL TRUCO
+            tool_choice=t_choice # <--- EL GRILLETE DIGITAL
         )
         
         mensaje = res.choices[0].message
@@ -39,15 +44,26 @@ def pensar_respuesta(texto_usuario, historial):
                 nombre_f = tool_call.function.name
                 args = json.loads(tool_call.function.arguments)
                 
-                # Mapeo de ejecución
-                if nombre_f == "google": resultado = herramientas.buscar_en_internet(args.get("consulta", texto_usuario))
-                elif nombre_f == "obtener_fecha_hora": resultado = herramientas.obtener_fecha_hora()
-                elif nombre_f == "obtener_clima": resultado = herramientas.obtener_clima(args.get("ciudad", "Buenos Aires"))
-                elif nombre_f == "buscar_en_wikipedia": resultado = herramientas.buscar_en_wikipedia(args.get("consulta"))
-                else: resultado = "Error de enlace."
+                # Ejecución de la lógica real
+                if nombre_f == "google": 
+                    resultado = herramientas.buscar_en_internet(args.get("consulta", texto_usuario))
+                elif nombre_f == "obtener_clima": 
+                    resultado = herramientas.obtener_clima(args.get("ciudad", "Buenos Aires"))
+                elif nombre_f == "obtener_fecha_hora": 
+                    resultado = herramientas.obtener_fecha_hora()
+                elif nombre_f == "buscar_en_wikipedia": 
+                    resultado = herramientas.buscar_en_wikipedia(args.get("consulta"))
+                else: 
+                    resultado = "Error de mapeo."
 
-                mensajes_api.append({"tool_call_id": tool_call.id, "role": "tool", "name": nombre_f, "content": str(resultado)})
+                mensajes_api.append({
+                    "tool_call_id": tool_call.id,
+                    "role": "tool",
+                    "name": nombre_f,
+                    "content": str(resultado)
+                })
             
+            # FASE 2: Respuesta final con los datos en la mano
             res_final = client.chat.completions.create(
                 messages=mensajes_api,
                 model="llama-3.3-70b-versatile"
@@ -57,7 +73,8 @@ def pensar_respuesta(texto_usuario, historial):
         return mensaje.content
 
     except Exception as e:
-        return f"Interferencia en el enlace: {str(e)}"
+        # Si falla el forzado (ej: el modelo no sabe qué argumentos poner), volvemos al modo auto
+        return f"Error de protocolo táctico: {str(e)}"
 
 def transcribir_audio(audio_bytes):
     try:
