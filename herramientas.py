@@ -59,17 +59,41 @@ def obtener_fecha_hora():
     return reporte_temporal
     
 def obtener_clima(ciudad="Buenos Aires"):
-    """Consulta el clima actual por satélite."""
+    """Consulta el clima actual y el pronóstico de 7 días por satélite."""
     try:
-        ciudad_f = ciudad.replace(" ", "+")
-        url = f"https://wttr.in/{ciudad_f}?format=%C+%t"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        res = requests.get(url, headers=headers, timeout=10)
-        if res.status_code == 200:
-            return f"Clima en {ciudad}: {res.text.strip()}"
-        return "Sensores meteorológicos fuera de línea."
-    except:
-        return "Error de conexión con el satélite climático."
+        # 1. Buscamos las coordenadas exactas de la ciudad
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={ciudad}&count=1&language=es"
+        geo_res = requests.get(geo_url, timeout=5).json()
+        
+        if not geo_res.get("results"):
+            return f"No se encontraron coordenadas en el mapa para {ciudad}."
+            
+        lat = geo_res["results"][0]["latitude"]
+        lon = geo_res["results"][0]["longitude"]
+        nombre_oficial = geo_res["results"][0]["name"]
+        
+        # 2. Descargamos el reporte de los próximos 7 días
+        clima_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto"
+        clima_res = requests.get(clima_url, timeout=5).json()
+        
+        actual_temp = clima_res["current"]["temperature_2m"]
+        
+        # 3. Armamos el reporte táctico para que la IA lo lea
+        reporte = f"REPORTE CLIMÁTICO GLOBAL PARA {nombre_oficial.upper()}:\n"
+        reporte += f"[AHORA] Temperatura actual: {actual_temp}°C\n\n"
+        reporte += "[PRONÓSTICO 7 DÍAS]:\n"
+        
+        fechas = clima_res["daily"]["time"]
+        max_t = clima_res["daily"]["temperature_2m_max"]
+        min_t = clima_res["daily"]["temperature_2m_min"]
+        prob_lluvia = clima_res["daily"]["precipitation_probability_max"]
+        
+        for i in range(len(fechas)):
+            reporte += f"- {fechas[i]}: Mín {min_t[i]}°C | Máx {max_t[i]}°C | Prob. Lluvia: {prob_lluvia[i]}%\n"
+            
+        return reporte
+    except Exception as e:
+        return "Error de conexión con el satélite Climático"
 
 def buscar_en_internet(consulta):
     """Buscador táctico optimizado para resultados en vivo."""
