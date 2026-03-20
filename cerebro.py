@@ -43,11 +43,10 @@ def pensar_respuesta(texto_usuario, historial):
                     resultado = herramientas.obtener_clima(args.get("ciudad", "Buenos Aires"))
                 elif nombre_f == "buscar_en_wikipedia":
                     resultado = herramientas.buscar_en_wikipedia(args.get("consulta"))
-                elif nombre_f == "buscar_en_internet":
+                elif nombre_f == "google": # <--- CAMBIA ESTO PARA QUE COINCIDA CON herramientas.py
                     resultado = herramientas.buscar_en_internet(args.get("consulta"))
                 else:
                     resultado = "Sensor no mapeado."
-
                 mensajes_api.append({
                     "tool_call_id": tool_call.id,
                     "role": "tool",
