@@ -2,18 +2,16 @@ import datetime
 import requests
 from zoneinfo import ZoneInfo
 import wikipedia
+from duckduckgo_search import DDGS # <--- El nuevo motor de búsqueda
 
-# Configuramos Wikipedia en español
 wikipedia.set_lang("es")
 
 def obtener_fecha_hora():
-    """Devuelve la fecha y hora actual exacta."""
     zona_horaria = ZoneInfo("America/Argentina/Buenos_Aires") 
     ahora = datetime.datetime.now(zona_horaria)
     return ahora.strftime("%A, %d de %B de %Y, %H:%M:%S")
 
 def obtener_clima(ciudad="Buenos Aires"):
-    """Busca el clima actual de una ciudad."""
     try:
         ciudad_formateada = ciudad.replace(" ", "+")
         url = f"https://wttr.in/{ciudad_formateada}?format=%C+%t"
@@ -24,47 +22,41 @@ def obtener_clima(ciudad="Buenos Aires"):
         return "Fallo de conexión meteorológica."
 
 def buscar_en_wikipedia(consulta):
-    """Busca un resumen de cualquier tema en Wikipedia."""
     try:
-        # Buscamos solo el resumen (2 oraciones) para que EDITH no hable media hora
         resumen = wikipedia.summary(consulta, sentences=2)
         return f"Según mis registros sobre '{consulta}': {resumen}"
-    except wikipedia.exceptions.DisambiguationError as e:
-        return f"Hay varios resultados para '{consulta}'. ¿Podrías ser más específico?"
-    except wikipedia.exceptions.PageError:
-        return f"No encontré información sobre '{consulta}' en mis archivos."
     except:
-        return "Error al acceder a la base de datos de Wikipedia."
+        return f"No encontré datos específicos en Wikipedia sobre '{consulta}'."
+
+def buscar_en_internet(consulta):
+    """Busca en tiempo real cualquier información en la web global."""
+    try:
+        with DDGS() as ddgs:
+            # Buscamos los 3 mejores resultados
+            resultados = [r for r in ddgs.text(consulta, max_results=3)]
+            if not resultados:
+                return "No encontré resultados recientes en la red."
+            
+            # Construimos un reporte corto
+            reporte = f"Resultados de mi escaneo sobre '{consulta}':\n"
+            for r in resultados:
+                reporte += f"- {r['body'][:200]}...\n"
+            return reporte
+    except Exception as e:
+        return f"Error en el escaneo de red: {str(e)}"
 
 mis_herramientas = [
+    {"type": "function", "function": {"name": "obtener_fecha_hora", "description": "Obtiene la fecha y hora actual.", "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {"name": "obtener_clima", "description": "Busca el clima de una ciudad.", "parameters": {"type": "object", "properties": {"ciudad": {"type": "string"}}, "required": ["ciudad"]}}},
+    {"type": "function", "function": {"name": "buscar_en_wikipedia", "description": "Información histórica o enciclopédica.", "parameters": {"type": "object", "properties": {"consulta": {"type": "string"}}, "required": ["consulta"]}}},
     {
         "type": "function",
         "function": {
-            "name": "obtener_fecha_hora",
-            "description": "Obtiene la fecha y hora actual.",
-            "parameters": {"type": "object", "properties": {}}
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "obtener_clima",
-            "description": "Busca el clima de una ciudad.",
+            "name": "buscar_en_internet",
+            "description": "Busca noticias actuales, deportes o cualquier dato de último minuto en internet.",
             "parameters": {
                 "type": "object",
-                "properties": {"ciudad": {"type": "string", "description": "Ciudad, ej: 'Madrid'"}},
-                "required": ["ciudad"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "buscar_en_wikipedia",
-            "description": "Busca información general sobre personas, lugares, historia o conceptos.",
-            "parameters": {
-                "type": "object",
-                "properties": {"consulta": {"type": "string", "description": "El tema a buscar"}},
+                "properties": {"consulta": {"type": "string", "description": "La búsqueda a realizar"}},
                 "required": ["consulta"]
             }
         }
