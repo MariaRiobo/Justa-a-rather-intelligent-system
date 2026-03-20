@@ -4,11 +4,11 @@ from groq import Groq
 from gtts import gTTS
 from io import BytesIO
 import base64
-import time
 
 # --- CONFIGURACIÓN STARK ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
 
+# ESTE ES EL DISEÑO QUE TE ENCANTA (Intacto)
 st.markdown("""
     <style>
     .stApp { background-color: #000000; color: #00d4ff; }
@@ -23,14 +23,16 @@ st.markdown("""
     <h2 style="text-align: center; color: #00d4ff; letter-spacing: 5px;">E.D.I.T.H.</h2>
     """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN CON PURGA DE MEMORIA ---
-# Si hay historial viejo guardado con el formato anterior, lo borramos para evitar el TypeError
-if "chat_history" not in st.session_state or (
-    len(st.session_state.chat_history) > 0 and isinstance(st.session_state.chat_history[0], tuple)
-):
+# --- INICIALIZACIÓN ---
+if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "audio_key" not in st.session_state:
+    st.session_state.audio_key = 0
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+# Aquí está la clave que te funcionaba: Un "fantasma" en el código solo para el audio
+audio_placeholder = st.empty()
 
 # --- CONTROLES ---
 audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
@@ -43,7 +45,7 @@ if audio_data:
         transcription = client.audio.transcriptions.create(
             file=("audio.webm", audio_data['bytes']),
             model="whisper-large-v3",
-            language="es" # Fuerza a Whisper a escuchar en español
+            language="es" # Obligamos a entender español
         )
         user_text = transcription.text
     except: pass
@@ -58,41 +60,36 @@ if user_text:
         )
         respuesta = res.choices[0].message.content
         
-        # --- GENERAR AUDIO ---
+        # Guardamos en el historial (Diccionario limpio)
+        st.session_state.chat_history.append({"autor": "Francis", "msg": user_text})
+        st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+        
+        # --- EL MOTOR DE AUDIO QUE TE FUNCIONABA ---
         tts = gTTS(text=respuesta, lang='es')
         audio_fp = BytesIO()
         tts.write_to_fp(audio_fp)
         audio_fp.seek(0)
         audio_b64 = base64.b64encode(audio_fp.read()).decode()
         
-        # Guardamos el mensaje en formato diccionario
-        st.session_state.chat_history.append({"autor": "Francis", "msg": user_text, "audio": None})
-        st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta, "audio": audio_b64})
+        st.session_state.audio_key += 1
+        
+        # Inyectamos el HTML con una ID única cada vez en el placeholder fantasma
+        audio_html = f"""
+            <audio autoplay key="{st.session_state.audio_key}">
+                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+            </audio>
+        """
+        audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
         
     except Exception as e:
         st.error(f"Error: {e}")
 
-# --- MOSTRAR CHAT Y EJECUTAR VOZ ---
+# --- MOSTRAR CHAT ---
+# Mostramos el historial de abajo hacia arriba debajo de la orbe
 for item in reversed(st.session_state.chat_history):
-    autor = item["autor"]
-    msg = item["msg"]
+    autor = item.get("autor", "Desconocido")
+    msg = item.get("msg", "")
     avatar = "👓" if autor == "EDITH" else "👤"
     
     with st.chat_message("assistant" if autor == "EDITH" else "user", avatar=avatar):
         st.write(f"**{autor}:** {msg}")
-        
-        # Si el mensaje tiene un audio pendiente, lo inyectamos y lo destruimos
-        if item.get("audio"):
-            unique_id = f"aud_{int(time.time() * 1000)}"
-            audio_html = f"""
-                <audio id="{unique_id}" autoplay="true" playsinline>
-                    <source src="data:audio/mpeg;base64,{item['audio']}" type="audio/mpeg">
-                </audio>
-                <script>
-                    document.getElementById("{unique_id}").play();
-                </script>
-            """
-            st.markdown(audio_html, unsafe_allow_html=True)
-            
-            # DESTRUIMOS el audio de la memoria para no bloquear respuestas futuras en iOS
-            item["audio"] = None
