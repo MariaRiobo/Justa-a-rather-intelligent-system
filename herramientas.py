@@ -27,27 +27,29 @@ def obtener_clima(ciudad="Buenos Aires"):
         return "Error de conexión con el satélite climático."
 
 def buscar_en_internet(consulta):
-    """Rastreo de emergencia usando un motor alternativo si DuckDuckGo falla."""
+    """Rastreo de red con protocolos de redundancia."""
     try:
         from duckduckgo_search import DDGS
         with DDGS() as ddgs:
-            # Quitamos 'actualidad' y dejamos que el motor decida, pero forzamos tiempo reciente
-            resultados = list(ddgs.text(f"{consulta} resultado hoy", region="ar-es", max_results=5))
+            # Intento 1: Búsqueda específica de resultados
+            query_primaria = f"{consulta} ultimo resultado partido"
+            resultados = list(ddgs.text(query_primaria, region="ar-es", max_results=3))
             
+            # Intento 2: Si el primero falla, buscamos en noticias generales
             if not resultados:
-                # Intento 2: Búsqueda más amplia
-                resultados = list(ddgs.text(f"último partido de {consulta}", region="ar-es", max_results=3))
+                query_secundaria = f"noticias {consulta} hoy"
+                resultados = list(ddgs.text(query_secundaria, region="ar-es", max_results=3))
 
             if resultados:
-                reporte = f"DATOS ENCONTRADOS PARA {consulta.upper()}:\n"
+                reporte = f"REPORTES DE RED PARA '{consulta}':\n"
                 for r in resultados:
-                    reporte += f"- {r['title']}: {r['body']}\n"
+                    # Limpiamos el texto para que la IA lo entienda mejor
+                    reporte += f"- TITULAR: {r['title']}\n  INFO: {r['body']}\n\n"
                 return reporte
             
-        return "No se encontraron datos en la red. Intenta reformular la búsqueda, señor."
+            return "Error: No se detectaron transmisiones ni datos recientes en la red superficial."
     except Exception as e:
-        # Si falla la librería, intentamos un raspado manual básico (Plan C)
-        return f"Error de conexión en el rastreador: {str(e)}"
+        return f"Fallo en el módulo de búsqueda: {str(e)}"
 
 def buscar_en_wikipedia(consulta):
     """Consulta la base de datos histórica."""
