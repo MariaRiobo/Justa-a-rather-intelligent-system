@@ -8,7 +8,7 @@ import base64
 # --- CONFIGURACIÓN STARK ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
 
-# ESTE ES EL DISEÑO QUE TE ENCANTA (Intacto)
+# EL DISEÑO QUE TE ENCANTA (Intacto)
 st.markdown("""
     <style>
     .stApp { background-color: #000000; color: #00d4ff; }
@@ -31,7 +31,7 @@ if "audio_key" not in st.session_state:
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# Aquí está la clave que te funcionaba: Un "fantasma" en el código solo para el audio
+# Placeholder fantasma para el audio
 audio_placeholder = st.empty()
 
 # --- CONTROLES ---
@@ -54,17 +54,30 @@ elif texto_manual:
 
 if user_text:
     try:
+        # 1. PREPARAR LA MEMORIA (MÓDULO 1 ACTIVADO)
+        # Empezamos con la instrucción base del sistema
+        mensajes_api = [{"role": "system", "content": "Eres EDITH. Responde corto y profesional."}]
+        
+        # Leemos los últimos 10 mensajes del historial para no saturar la memoria
+        for item in st.session_state.chat_history[-10:]:
+            role = "assistant" if item.get("autor") == "EDITH" else "user"
+            mensajes_api.append({"role": role, "content": item.get("msg")})
+            
+        # Añadimos el comando actual que acabas de decir
+        mensajes_api.append({"role": "user", "content": user_text})
+
+        # 2. ENVIAR A GROQ CON TODO EL CONTEXTO
         res = client.chat.completions.create(
-            messages=[{"role": "system", "content": "Eres EDITH. Responde corto y profesional."}, {"role": "user", "content": user_text}],
+            messages=mensajes_api,
             model="llama-3.1-8b-instant"
         )
         respuesta = res.choices[0].message.content
         
-        # Guardamos en el historial (Diccionario limpio)
+        # Guardamos en el historial visible
         st.session_state.chat_history.append({"autor": "Francis", "msg": user_text})
         st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
         
-        # --- EL MOTOR DE AUDIO QUE TE FUNCIONABA ---
+        # --- MOTOR DE AUDIO ---
         tts = gTTS(text=respuesta, lang='es')
         audio_fp = BytesIO()
         tts.write_to_fp(audio_fp)
@@ -73,7 +86,6 @@ if user_text:
         
         st.session_state.audio_key += 1
         
-        # Inyectamos el HTML con una ID única cada vez en el placeholder fantasma
         audio_html = f"""
             <audio autoplay key="{st.session_state.audio_key}">
                 <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
@@ -85,7 +97,6 @@ if user_text:
         st.error(f"Error: {e}")
 
 # --- MOSTRAR CHAT ---
-# Mostramos el historial de abajo hacia arriba debajo de la orbe
 for item in reversed(st.session_state.chat_history):
     autor = item.get("autor", "Desconocido")
     msg = item.get("msg", "")
