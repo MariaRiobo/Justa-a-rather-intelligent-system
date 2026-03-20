@@ -26,29 +26,38 @@ def obtener_cotizacion_dolar():
         return "Error de conexión con el sensor de divisas."
 
 def obtener_fecha_hora():
-    """Retorna la fecha y hora exacta consultando un reloj atómico externo."""
+    """Retorna la fecha y hora exacta, calculando el día en español para evitar alucinaciones de la IA."""
     try:
-        # Consultamos la hora exacta a un servidor mundial independiente
+        # Consultamos la hora atómica mundial
         url = "http://worldtimeapi.org/api/timezone/America/Argentina/Buenos_Aires"
         res = requests.get(url, timeout=5)
         
         if res.status_code == 200:
             datos = res.json()
-            # La API nos devuelve un formato ISO, lo acomodamos
             fecha_hora_iso = datos["datetime"]
-            # Cortamos los microsegundos para que quede limpio: YYYY-MM-DDTHH:MM:SS
-            fecha_hora_limpia = fecha_hora_iso.split(".")[0].replace("T", " ")
-            return fecha_hora_limpia
+            # Extraemos el objeto de tiempo exacto
+            dt = datetime.datetime.strptime(fecha_hora_iso[:19], "%Y-%m-%dT%H:%M:%S")
         else:
-            # Plan B (Respaldo): Si el servidor externo cae, usamos pytz
-            import pytz
-            zona = pytz.timezone("America/Argentina/Buenos_Aires")
-            ahora = datetime.datetime.now(zona)
-            return ahora.strftime("%Y-%m-%d %H:%M:%S")
-    except Exception as e:
-        return f"Error en el enlace temporal: {str(e)}"
-        
+            raise Exception("Fallo API")
+            
+    except Exception:
+        # Plan B (Respaldo local) por si el servidor externo no responde
+        import pytz
+        zona = pytz.timezone("America/Argentina/Buenos_Aires")
+        dt = datetime.datetime.now(zona)
 
+    # Diccionarios blindados en español (Para que el servidor en inglés no afecte)
+    dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+    nombre_dia = dias[dt.weekday()]
+    nombre_mes = meses[dt.month - 1]
+
+    # Le damos la información a la IA tan clara que es imposible que se equivoque
+    reporte_temporal = f"Hoy es {nombre_dia}, {dt.day} de {nombre_mes} de {dt.year}. La hora atómica exacta es {dt.strftime('%H:%M:%S')}."
+    
+    return reporte_temporal
+    
 def obtener_clima(ciudad="Buenos Aires"):
     """Consulta el clima actual por satélite."""
     try:
