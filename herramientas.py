@@ -7,6 +7,24 @@ from bs4 import BeautifulSoup
 # Configuración básica
 wikipedia.set_lang("es")
 
+def obtener_cotizacion_dolar():
+    """Consulta las cotizaciones exactas del dólar en Argentina."""
+    try:
+        # Usamos una API especializada en el peso argentino
+        url = "https://dolarapi.com/v1/dolares"
+        res = requests.get(url, timeout=10)
+        if res.status_code == 200:
+            datos = res.json()
+            reporte = "COTIZACIONES TÁCTICAS (USD/ARS):\n"
+            for d in datos:
+                # Solo tomamos los más importantes para no marear a la IA
+                if d['casa'] in ['oficial', 'blue', 'mep']:
+                    reporte += f"- Dólar {d['casa'].capitalize()}: Compra ${d['compra']} | Venta ${d['venta']}\n"
+            return reporte
+        return "Error: Los mercados financieros están cerrados o inaccesibles."
+    except:
+        return "Error de conexión con el sensor de divisas."
+
 def obtener_fecha_hora():
     """Retorna la fecha y hora actual en Buenos Aires."""
     zona = ZoneInfo("America/Argentina/Buenos_Aires")
