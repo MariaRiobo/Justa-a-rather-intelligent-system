@@ -27,41 +27,38 @@ def obtener_clima(ciudad="Buenos Aires"):
         return "Error de conexión con el satélite climático."
 
 def buscar_en_internet(consulta):
-    """Buscador táctico de bajo consumo (Sin API, sin límites)."""
+    """Buscador táctico optimizado para resultados en vivo."""
     try:
-        # Usamos la versión 'html' de DuckDuckGo que es más fácil de raspar
-        url = f"https://html.duckduckgo.com/html/?q={consulta.replace(' ', '+')}"
+        # Forzamos a DuckDuckGo a buscar resultados y marcadores específicos
+        query = f"{consulta} resultado marcador final hoy"
+        url = f"https://html.duckduckgo.com/html/?q={query.replace(' ', '+')}"
         
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-            "Accept-Language": "es-ES,es;q=0.9"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
         }
 
         response = requests.get(url, headers=headers, timeout=10)
-        
         if response.status_code != 200:
-            return "Error: Interferencia en la señal de red (Bloqueo de servidor)."
+            return "Error: Interferencia en la señal."
 
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Buscamos los resultados orgánicos
         resultados = soup.find_all('div', class_='result__body')
         
         if not resultados:
-            return "No se detectaron transmisiones claras. Intente reformular, señor."
+            return "No se detectaron marcadores claros en la zona."
 
-        reporte = "DATOS RECUPERADOS DE LA RED:\n"
-        # Tomamos los 4 primeros resultados para no saturar a la IA
-        for i, res in enumerate(resultados[:4]):
+        reporte = "DATOS DE CAMPO DETECTADOS:\n"
+        # Tomamos los 5 primeros para darle más chances a la IA de encontrar el número
+        for res in resultados[:5]:
             titulo = res.find('a', class_='result__a').text
             snippet = res.find('a', class_='result__snippet').text
-            reporte += f"- {titulo}: {snippet}\n\n"
+            reporte += f"FUENTE: {titulo}\nINFO: {snippet}\n\n"
             
         return reporte
 
     except Exception as e:
         return f"Fallo en el escáner: {str(e)}"
-
+        
 def buscar_en_wikipedia(consulta):
     """Consulta la base de datos histórica."""
     try:
