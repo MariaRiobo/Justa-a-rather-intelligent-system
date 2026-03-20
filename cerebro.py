@@ -3,6 +3,7 @@ from groq import Groq
 from config import SYSTEM_PROMPT
 import herramientas
 
+# Configuración del cliente Groq
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def pensar_respuesta(texto_usuario, historial):
@@ -10,7 +11,7 @@ def pensar_respuesta(texto_usuario, historial):
     texto_min = texto_usuario.lower()
     datos_extra = ""
 
-    # RASTREO WEB: Si detecta palabras clave, busca en internet antes de hablar con la IA
+    # RASTREO WEB
     keywords_web = ["boca", "river", "partido", "resultado", "jugó", "dolar", "noticias", "precio", "quien es", "quién es"]
     
     if any(w in texto_min for w in keywords_web):
@@ -26,19 +27,18 @@ def pensar_respuesta(texto_usuario, historial):
     contexto_inyectado = SYSTEM_PROMPT
     
     if datos_extra:
-       contexto_inyectado += "\nINSTRUCCIÓN DE PRIORIDAD ALTA: Analiza los 'DATOS DE CAMPO' de arriba. "
-        contexto_inyectado += "Si en los textos de las fuentes (como Olé o ESPN) aparece un marcador o un resultado, INFÓRMALO DE INMEDIATO como si lo estuvieras viendo en una pantalla táctica. "
-        contexto_inyectado += "No me digas que no tienes la información si el resultado aparece en los fragmentos de texto."
-        
-    # Preparamos los mensajes para Groq
+        contexto_inyectado += f"\n\n--- INFORMACIÓN DE CAMPO RECUPERADA ---\n{datos_extra}\n"
+        contexto_inyectado += "\nINSTRUCCIÓN DE PRIORIDAD ALTA: Analiza los 'DATOS DE CAMPO' de arriba. "
+        contexto_inyectado += "Si en los textos aparece un marcador o un resultado, INFÓRMALO DE INMEDIATO. "
+        contexto_inyectado += "No digas que no tienes internet."
+
     mensajes_api = [{"role": "system", "content": contexto_inyectado}]
     
-    # Añadimos memoria (últimos 4 mensajes)
+    # Memoria (últimos 4 mensajes)
     for item in historial[-4:]:
         role = "assistant" if item.get("autor") == "EDITH" else "user"
         mensajes_api.append({"role": role, "content": item.get("msg")})
     
-    # Añadimos la pregunta actual
     mensajes_api.append({"role": "user", "content": texto_usuario})
 
     # --- PASO 3: LLAMADA A LA API ---
@@ -51,23 +51,14 @@ def pensar_respuesta(texto_usuario, historial):
 
     except Exception as e:
         return f"Error en el enlace neuronal: {str(e)}"
-    try:
-        # FASE 3: Generación de respuesta con los datos ya inyectados
-        res = client.chat.completions.create(
-            messages=mensajes_api,
-            model="llama-3.3-70b-versatile"
-        )
-        return res.choices[0].message.content
-
-    except Exception as e:
-        return f"Error en el enlace neuronal: {str(e)}"
 
 def transcribir_audio(audio_bytes):
     try:
         transcription = client.audio.transcriptions.create(
-            file=("audio.webm", audio_bytes), 
-            model="whisper-large-v3", 
+            file=("audio.webm", audio_bytes),
+            model="whisper-large-v3",
             language="es"
         )
         return transcription.text
-    except: return None
+    except Exception:
+        return None
