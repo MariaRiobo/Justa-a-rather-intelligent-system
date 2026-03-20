@@ -10,19 +10,27 @@ def obtener_fecha_hora():
     return ahora.strftime("%A, %d de %B de %Y, %H:%M:%S")
 
 def obtener_clima(ciudad="Buenos Aires"):
-    """Se conecta a la red para obtener el clima actual de una ciudad."""
+    """Se conecta a la red para obtener el clima actual con camuflaje de navegador."""
     try:
-        # El satélite requiere que los espacios sean signos "+"
         ciudad_formateada = ciudad.replace(" ", "+")
-        
         url = f"https://wttr.in/{ciudad_formateada}?format=%C+%t"
-        response = requests.get(url, timeout=5) # Le damos 5 segundos máximo
+        
+        # Le decimos al satélite que somos un navegador real
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
         
         if response.status_code == 200:
-            return f"El clima en {ciudad} es: {response.text}"
-        return f"Los sensores fallaron. Código de error del satélite: {response.status_code}"
+            # Limpiamos espacios raros que a veces manda el satélite
+            dato_clima = response.text.strip()
+            return f"El clima en {ciudad} es: {dato_clima}"
+        
+        return f"Error táctico: El satélite respondió con código {response.status_code}."
     except Exception as e:
-        return f"Error de conexión con el satélite: {e}"
+        return f"Fallo de conexión: {str(e)}"
+        
 # Aquí le explicamos a E.D.I.T.H. qué herramientas tiene y cómo usarlas
 mis_herramientas = [
     {
