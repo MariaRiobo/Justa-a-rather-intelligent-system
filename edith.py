@@ -119,11 +119,24 @@ with st.expander("Subir archivos"):
     if archivo_subido is not None:
         texto_documento = herramientas.extraer_texto(archivo_subido)
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
-
+-
 # --- CONTROLES DE AUDIO / TEXTO ---
-audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True)
+with st.container():
+    st.caption("🎙️ Control de Voz:")
+    audio_data = mic_recorder(
+        start_prompt="HABLAR AHORA", 
+        stop_prompt="ESCUCHANDO...", 
+        key='mic_pc_forzado', 
+        just_once=True
+    )
 texto_manual = st.chat_input("Escribe...")
 
+user_text = None
+if audio_data:
+    user_text = cerebro.transcribir_audio(audio_data['bytes'])
+elif texto_manual:
+    user_text = texto_manual
+    
 # El sistema se activa si hablaste/escribiste, o si simplemente tomaste una foto
 if user_text or imagen_actual:
     try:
