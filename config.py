@@ -18,12 +18,52 @@ Tu tono es sarcástico, directo y eficiente (estilo Jarvis/Stark).
 # Diseño Visual Stark
 CSS_STARK = """
 <style>
-.stApp { background-color: #000000; color: #00d4ff; }
+/* Fondo y Colores */
+.stApp { background-color: #000000; color: #00d4ff; font-family: 'Courier New', Courier, monospace; }
 [data-testid="stHeader"] { display: none; }
-.orb { width: 60px; height: 60px; background: radial-gradient(circle, #00d4ff 0%, #000 75%); border-radius: 50%; margin: 10px auto; box-shadow: 0 0 20px #00d4ff; animation: pulse 2s infinite; }
+
+/* El Orbe Pulsante Único (Perfectamente Centrado) */
+.orb { 
+    width: 80px; height: 80px; 
+    background: radial-gradient(circle, rgba(0,212,255,1) 0%, rgba(0,0,0,1) 75%); 
+    border-radius: 50%; 
+    margin: 40px auto; 
+    box-shadow: 0 0 30px #00d4ff; 
+    animation: pulse 1.5s infinite; 
+    display: block;
+}
 @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
-.stButton > button { background-color: #000 !important; color: #00d4ff !important; border: 2px solid #00d4ff !important; border-radius: 20px !important; width: 100% !important; font-weight: bold !important; }
-.stChatMessage { background: rgba(8, 18, 23, 0.9) !important; border: 1px solid #00d4ff !important; }
-audio { display: none !important; }
+
+/* Título EDITH */
+.edith_title {
+    text-align: center; color: #00d4ff; letter-spacing: 8px; font-weight: bold; margin-bottom: 30px;
+}
+
+/* Estilos Stark para el Login e Inputs */
+.stTextInput > div > div > input {
+    background-color: rgba(0, 30, 40, 0.7) !important;
+    color: #00d4ff !important;
+    border: 2px solid #00d4ff !important;
+    border-radius: 10px !important;
+    padding: 10px !important;
+}
+.stTextInput > div > div > input:focus {
+    box-shadow: 0 0 15px #00d4ff !important;
+}
+
+/* Estilos Stark para Botones */
+.stButton > button { 
+    background-color: #000 !important; color: #00d4ff !important; 
+    border: 2px solid #00d4ff !important; border-radius: 20px !important; 
+    width: 100% !important; font-weight: bold !important;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3) !important;
+}
+.stButton > button:hover {
+    background-color: #00d4ff !important; color: #000 !important;
+    box-shadow: 0 0 20px #00d4ff !important;
+}
+
+/* Chat Messages */
+.stChatMessage { background: rgba(8, 18, 23, 0.9) !important; border: 1px solid #00d4ff !important; border-radius: 10px !important;}
 </style>
 """
