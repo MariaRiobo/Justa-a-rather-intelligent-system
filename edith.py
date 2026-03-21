@@ -84,35 +84,42 @@ def check_password():
 check_password()
 
 
-# --- 4. PROTOCOLO DE BIENVENIDA AUTOMÁTICO DITÁMICO ---
+
 # --- 4. PROTOCOLO DE BIENVENIDA AUTOMÁTICO DINÁMICO ---
+# --- 4. PROTOCOLO DE BIENVENIDA AUTOMÁTICO ---
 if st.session_state.ejecutar_saludo:
-    with st.spinner("Sincronizando satélites para el reporte matutino..."):
+    # 1. Generamos el reporte (esto funciona bien)
+    with st.spinner("Sincronizando satélites..."):
         prompt_oculto = "La Jefa acaba de iniciar el sistema. Revisa la hora, el clima y dale un reporte de bienvenida estilo Stark. Sé breve, sarcástica y al grano. Máximo 2 oraciones."
         mensaje_bienvenida = cerebro.pensar_respuesta(prompt_oculto, [], "")
     
     try:
-        # Limpiamos caracteres que traban la voz
+        # 2. Preparamos la voz
         texto_limpio = mensaje_bienvenida.replace("*", "").replace("#", "").replace("_", "")
-        
         audio_b64 = voz.generar_audio(texto_limpio)
         st.session_state.audio_key += 1
         
-        # Inyectamos el audio en el placeholder oficial
-        audio_html = f"""
-            <audio autoplay key="saludo_{st.session_state.audio_key}">
-                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-            </audio>
-        """
-        audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
-        
-        # Registro en el historial
+        # 3. GUARDAMOS EN EL HISTORIAL PRIMERO
         st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
+        
+        # 4. INYECCIÓN DE AUDIO (El truco es el autoplay y el key dinámico)
+        audio_html = f"""
+            <div style="display:none;">
+                <audio autoplay="true" key="welcome_{st.session_state.audio_key}">
+                    <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                </audio>
+            </div>
+        """
+        # Usamos st.write o el placeholder si ya lo tienes definido
+        st.components.v1.html(audio_html, height=0)
+        
+        # 5. Cerramos protocolo
         st.session_state.sistemas_activados = True
         st.session_state.ejecutar_saludo = False 
         
     except Exception as e:
-        st.error(f"Fallo en el protocolo matutino: {e}")
+        st.error(f"Fallo en el protocolo de voz: {e}")
+        
         
             
                                                      
