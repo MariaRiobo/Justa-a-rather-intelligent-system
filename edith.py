@@ -84,22 +84,32 @@ def check_password():
 check_password()
 
 # --- 4. PROTOCOLO DE BIENVENIDA AUTOMÁTICO ---
+# --- 4. PROTOCOLO DE BIENVENIDA AUTOMÁTICO DITÁMICO ---
 if st.session_state.ejecutar_saludo:
-    mensaje_bienvenida = "Sistemas activados. Soy E.D.I.T.H. Bienvenida de vuelta, Jefa."
+    with st.spinner("Sincronizando satélites para el reporte matutino..."):
+        # Le enviamos una orden oculta al cerebro para que arme el saludo usando sus herramientas
+        prompt_oculto = "La Jefa acaba de iniciar el sistema. Revisa la hora, el clima y dale un reporte de bienvenida estilo Stark. Sé breve, sarcástica y al grano. Máximo 2 oraciones."
+        
+        # Hacemos que la IA genere el texto en vivo
+        mensaje_bienvenida = cerebro.pensar_respuesta(prompt_oculto, [], "")
+        
     try:
-        audio_b64 = voz.generar_audio(mensaje_bienvenida)
+        # Limpiamos los asteriscos para que la voz fluya perfecta
+        texto_limpio = mensaje_bienvenida.replace("*", "").replace("#", "").replace("_", "")
+        
+        audio_b64 = voz.generar_audio(texto_limpio)
         st.session_state.audio_key += 1
         
-        # Inyección directa con markdown para asegurar el autoplay
+        # Reproducimos el audio
         st.markdown(f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>', unsafe_allow_html=True)
         
-        # Registro en chat
+        # Lo guardamos en el chat visual
         st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
         st.session_state.sistemas_activados = True
         st.session_state.ejecutar_saludo = False 
     except Exception as e:
-        st.error(f"Fallo en el saludo inicial: {e}")
-    
+        st.error(f"Fallo en el protocolo matutino: {e}")
+        
 
 
 
