@@ -85,13 +85,12 @@ if st.session_state.ejecutar_saludo:
     except Exception as e:
         st.error(f"Fallo en el saludo inicial: {e}")
 
-# --- 6. CONTROLES DE AUDIO / TEXTO (TU DISEÑO ORIGINAL) ---
+
+# --- 6. CONTROLES DE AUDIO / TEXTO ---
 audio_data = mic_recorder(
     start_prompt="HABLAR AHORA", 
     stop_prompt="ESCUCHANDO...", 
-    key='mic_original', 
-    just_once=True, 
-    use_container_width=True
+    key='mic_definitivo'
 )
 texto_manual = st.chat_input("Escribe...")
 
