@@ -183,9 +183,5 @@ for item in reversed(st.session_state.chat_history):
     with st.chat_message("assistant" if autor == "EDITH" else "user", avatar=avatar):
         st.write(f"**{autor}:** {msg}")
 
-with st.sidebar:
-    if st.button("🧹 Purgar Escáner (Liberar Tokens)"):
-        st.session_state.texto_documento = ""
-        st.session_state.texto_youtube = ""
-        st.success("Contexto temporal purgado. Reactores optimizados.")
+
 
