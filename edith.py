@@ -121,9 +121,26 @@ with st.expander("Subir archivos"):
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
 
 
+-
 # --- CONTROLES DE AUDIO / TEXTO ---
-audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
+# Usamos el micrófono oficial y nativo (Inbloqueable)
+audio_value = st.audio_input("Transmisor de Voz")
+
 texto_manual = st.chat_input("Escribe...")
+
+user_text = None
+
+# Priorizamos el texto si acabas de escribir
+if texto_manual:
+    user_text = texto_manual
+
+# Si usaste la voz, procesamos el audio
+elif audio_value:
+    audio_bytes = audio_value.read()
+    # Esta barrera evita que EDITH te responda en bucle el mismo audio
+    if st.session_state.get("ultimo_audio") != audio_bytes:
+        user_text = cerebro.transcribir_audio(audio_bytes)
+        st.session_state.ultimo_audio = audio_bytes
 
 # --- PROCESAMIENTO CENTRAL ---
 user_text = None
