@@ -119,7 +119,7 @@ with st.expander("Subir archivos"):
     if archivo_subido is not None:
         texto_documento = herramientas.extraer_texto(archivo_subido)
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
--
+
 # --- CONTROLES DE AUDIO / TEXTO ---
 with st.container():
     st.caption("🎙️ Control de Voz:")
