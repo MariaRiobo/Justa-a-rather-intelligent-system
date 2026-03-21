@@ -48,34 +48,31 @@ audio_placeholder = st.empty()
 
 # --- SISTEMA DE RECONOCIMIENTO DE DISPOSITIVO (COOKIES) ---
 def check_password():
-    # Inicializamos el manejador de cookies
     cookie_manager = stx.CookieManager()
-    
-    # 1. Intentamos leer la "Llave Stark" del navegador
     token_recuerdo = cookie_manager.get(cookie="stark_access_token")
 
-    # 2. Si la cookie existe y es correcta, saltamos el login
+    # Si entra directo con la cookie
     if token_recuerdo == st.secrets["PASSWORD_MAESTRO"]:
         st.session_state["password_correct"] = True
+        # Agregamos esta regla: Si entró con cookie y aún no ha saludado hoy, que salude.
+        if "bienvenida_dicha" not in st.session_state:
+            st.session_state.ejecutar_saludo = True
+            st.session_state.bienvenida_dicha = True
         return True
 
+    # Si entra escribiendo la contraseña manualmente
     def password_entered():
         if st.session_state["password"] == st.secrets["PASSWORD_MAESTRO"]:
             st.session_state["password_correct"] = True
             st.session_state["ejecutar_saludo"] = True
-            
-            # 🍪 GUARDAMOS LA LLAVE: Esto hará que te reconozca la próxima vez
-            # Se guarda por 30 días (ajustable)
+            st.session_state["bienvenida_dicha"] = True
             cookie_manager.set("stark_access_token", st.secrets["PASSWORD_MAESTRO"], expires_at=None)
-            
             del st.session_state["password"]
         else:
             st.session_state["password_correct"] = False
 
     if st.session_state.get("password_correct"):
         return True
-
-    # Interfaz de Login (Si no hay cookie o es la primera vez)
    
     st.text_input("Identificación Requerida:", type="password", on_change=password_entered, key="password")
     
@@ -124,7 +121,7 @@ with st.expander("Subir archivos"):
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
 
 # --- CONTROLES DE AUDIO / TEXTO ---
-audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
+audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True)
 texto_manual = st.chat_input("Escribe...")
 
 # --- PROCESAMIENTO CENTRAL ---
