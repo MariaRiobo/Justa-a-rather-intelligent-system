@@ -23,12 +23,17 @@ if "ejecutar_saludo" not in st.session_state:
 if "password_correct" not in st.session_state:
     st.session_state.password_correct = False
     
- # --- CONFIGURACIÓN UI ---
-st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
+# --- 5. CONFIGURACIÓN UI Y ELEMENTOS VISUALES ---
+st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
 st.markdown(CSS_STARK, unsafe_allow_html=True)
 
+# 👇 ESTA ES LA ÚNICA VEZ QUE DIBUJAMOS EL ORBE Y EL TÍTULO 👇
+st.markdown("""
+    <div class="orb"></div>
+    <h1 class="edith_title">E.D.I.T.H.</h1>
+""", unsafe_allow_html=True)
 
-audio_placeholder = st.empty()   
+audio_placeholder = st.empty()
 
 # --- 3. SISTEMA DE AUTENTICACIÓN STARK ---
 def check_password():
