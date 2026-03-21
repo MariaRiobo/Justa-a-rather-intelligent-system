@@ -9,5 +9,5 @@ pytz
 PyPDF2
 yt-dlp
 extra-streamlit-components
-audio-recorder-streamlit
+
 
