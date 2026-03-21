@@ -3,7 +3,7 @@ import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 import herramientas
 import extra_streamlit_components as stx
-from audio_recorder_streamlit import audio_recorder
+
 
 # Módulos Stark
 from config import CSS_STARK
@@ -85,17 +85,22 @@ if st.session_state.ejecutar_saludo:
     except Exception as e:
         st.error(f"Fallo en el saludo inicial: {e}")
 
-# --- 6. CONTROLES PRINCIPALES (DISEÑO STARK ORIGINAL) ---
-audio_bytes = audio_recorder(
-    text="",
-    recording_color="#00d4ff",
-    neutral_color="#ffffff",
-    icon_name="microphone",
-    icon_size="3x",
-    key="mic_principal"
+# --- 6. CONTROLES DE AUDIO / TEXTO (TU DISEÑO ORIGINAL) ---
+audio_data = mic_recorder(
+    start_prompt="HABLAR AHORA", 
+    stop_prompt="ESCUCHANDO...", 
+    key='mic_original', 
+    just_once=True, 
+    use_container_width=True
 )
-texto_manual = st.chat_input("Escribe tu orden...")
+texto_manual = st.chat_input("Escribe...")
 
+# --- PROCESAMIENTO CENTRAL ---
+user_text = None
+if audio_data:
+    user_text = cerebro.transcribir_audio(audio_data['bytes'])
+elif texto_manual:
+    user_text = texto_manual
 # --- 7. SENSORES ÓPTICOS Y ESCÁNER ---
 with st.expander(" Activar Sensores Ópticos"):
     opcion_vision = st.radio("Modo de entrada:", ["Cámara", "Archivo"], horizontal=True)
