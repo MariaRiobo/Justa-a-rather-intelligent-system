@@ -23,7 +23,7 @@ if "chat_history" not in st.session_state:
         # Si hay algo guardado, lo cargamos como el primer mensaje de EDITH
         st.session_state.chat_history = [{
             "autor": "EDITH", 
-            "msg": "Registros recuperados. Estoy al tanto de nuestras sesiones previas, Comandante."
+            "msg": "Registros recuperados. Estoy al tanto de nuestras sesiones previas, Francis."
         }]
     else:
         st.session_state.chat_history = []
