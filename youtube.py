@@ -1,50 +1,83 @@
-import re
+import yt_dlp
 import requests
+import re
 
 def extraer_id_youtube(url):
-    """Extrae el ID del video de cualquier link de YouTube."""
     patron = r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'
     match = re.search(patron, url)
     return match.group(1) if match else None
 
 def obtener_transcripcion(url):
     video_id = extraer_id_youtube(url)
+    if not video_id: 
+        return "ERROR_INTERNO: URL inválida."
     
-    if not video_id:
-        return "ERROR_INTERNO: No se pudo detectar el ID exacto del video."
-        
+    # Configuramos el extractor sigiloso
+    ydl_opts = {
+        'quiet': True,
+        'skip_download': True,
+        'writesubtitles': True,
+        'writeautomaticsub': True,
+        'subtitleslangs': ['es', 'en'],
+        'no_warnings': True
+    }
+    
     try:
-        # 🛰️ PLAN C: Conexión directa a la API REST gratuita de TubeText
-        api_url = f"https://tubetext.vercel.app/youtube/transcript?video_id={video_id}"
-        
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        respuesta = requests.get(api_url, headers=headers)
-        
-        if respuesta.status_code != 200:
-            return f"ERROR_INTERNO: La API satelital no responde (Código {respuesta.status_code})."
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Extraemos la metadata engañando a los escudos de YouTube
+            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
             
-        datos = respuesta.json()
-        
-        # Validamos estrictamente si la API nos devolvió éxito (nada de falsos positivos)
-        if not datos.get("success"):
-            return "ERROR_INTERNO: La API satelital no pudo extraer los subtítulos de este video."
+            # Juntamos subtítulos manuales y automáticos
+            subs = info.get('subtitles', {})
+            auto_subs = info.get('automatic_captions', {})
+            all_subs = {**auto_subs, **subs}
             
-        data_block = datos.get("data", {})
-        
-        # Intentamos obtener el texto unificado
-        texto_completo = data_block.get("full_text")
-        
-        # Si el texto unificado no viene, lo ensamblamos desde los fragmentos
-        if not texto_completo:
-            fragmentos = data_block.get("transcript", [])
-            if isinstance(fragmentos, list):
-                # Unimos todos los pedazos de texto en un solo párrafo
-                texto_completo = " ".join(str(f) for f in fragmentos)
-        
-        if not texto_completo:
-            return "ERROR_INTERNO: La API satelital devolvió un archivo vacío."
+            if not all_subs:
+                return "ERROR_INTERNO: El video no tiene subtítulos disponibles."
+                
+            # Prioridad de infiltración: Español, luego Inglés, luego lo que haya
+            lang_to_use = None
+            for lang in ['es', 'en']:
+                if lang in all_subs:
+                    lang_to_use = lang
+                    break
             
-        return texto_completo
-        
+            if not lang_to_use:
+                lang_to_use = list(all_subs.keys())[0]
+                
+            # Buscamos el formato json3 (el formato de datos puro de YouTube)
+            sub_url = None
+            for formato in all_subs[lang_to_use]:
+                if formato.get('ext') == 'json3':
+                    sub_url = formato.get('url')
+                    break
+            
+            if not sub_url:
+                return "ERROR_INTERNO: Formato de subtítulo no descifrable."
+                
+            # Descargamos el archivo directamente del servidor interno de YouTube
+            resp = requests.get(sub_url)
+            if resp.status_code != 200:
+                return "ERROR_INTERNO: No se pudo descargar el archivo de subtítulos."
+                
+            datos = resp.json()
+            
+            # Limpiamos el texto de códigos y marcas de tiempo
+            texto = []
+            for evento in datos.get('events', []):
+                for seg in evento.get('segs', []):
+                    if 'utf8' in seg:
+                        texto.append(seg['utf8'])
+                        
+            texto_completo = "".join(texto).replace('\n', ' ')
+            texto_completo = re.sub(r'\s+', ' ', texto_completo).strip()
+            
+            if not texto_completo:
+                return "ERROR_INTERNO: Archivo de subtítulos vacío."
+                
+            return texto_completo
+            
     except Exception as e:
-        return f"ERROR_INTERNO: Fallo general de conexión. Detalle: {e}"
+        # Si algo falla, atrapamos solo la primera línea del error para no saturar
+        error_msg = str(e).split('\n')[0] 
+        return f"ERROR_INTERNO: El extractor blindado falló. Detalle: {error_msg}"
