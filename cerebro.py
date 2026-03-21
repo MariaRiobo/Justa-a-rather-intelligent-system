@@ -99,7 +99,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
 def transcribir_audio(audio_bytes):
     try:
         transcription = client.audio.transcriptions.create(
-            file=("audio.webm", audio_bytes),
+            file=("audio.wav", audio_bytes),
             model="whisper-large-v3",
             language="es"
         )
