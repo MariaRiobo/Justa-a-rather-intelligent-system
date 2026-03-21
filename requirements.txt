@@ -7,4 +7,5 @@ wikipedia
 beautifulsoup4
 pytz
 PyPDF2
+yt-dlp
 
