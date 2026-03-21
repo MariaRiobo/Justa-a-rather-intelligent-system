@@ -125,12 +125,15 @@ audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO..
 texto_manual = st.chat_input("Escribe...")
 
 # --- PROCESAMIENTO CENTRAL ---
-user_text = None
-if audio_data:
-    user_text = cerebro.transcribir_audio(audio_data['bytes'])
-elif texto_manual:
-    user_text = texto_manual
-
+with st.container():
+    st.caption("🎙️ Control de Voz:")
+    audio_data = mic_recorder(
+        start_prompt="HABLAR AHORA", 
+        stop_prompt="ESCUCHANDO...", 
+        key='mic_pc_forzado', 
+        just_once=True
+    )
+texto_manual = st.chat_input("Escribe...")
 # El sistema se activa si hablaste/escribiste, o si simplemente tomaste una foto
 if user_text or imagen_actual:
     try:
