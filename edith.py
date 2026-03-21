@@ -84,8 +84,21 @@ if st.session_state.ejecutar_saludo:
     except Exception as e:
         st.error(f"Fallo en el saludo inicial: {e}")
 
-# --- 6. CONTROLES PRINCIPALES (Movidos aquí para que no desaparezcan) ---
-audio_data = mic_recorder(start_prompt="🎙️ HABLAR AHORA", stop_prompt="⏳ ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
+# --- 6. CONTROLES PRINCIPALES ---
+# Creamos un bloque visual exclusivo para forzar la renderización del micrófono
+st.markdown("---")
+with st.container():
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        audio_data = mic_recorder(
+            start_prompt="HABLAR", 
+            stop_prompt="ESCUCHANDO", 
+            key='mic_stark_v2',  # Cambiamos la llave para resetear su memoria
+            just_once=True
+        )
+    with col2:
+        st.caption("👈 Presiona para activar el canal de voz")
+
 texto_manual = st.chat_input("Escribe tu orden...")
 
 # --- 7. SENSORES ÓPTICOS Y ESCÁNER ---
