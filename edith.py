@@ -32,7 +32,7 @@ if not st.session_state.sistemas_activados:
     
     # Este botón le da al navegador el "clic" que necesita para permitir el sonido
     if st.button("🔌 INICIAR E.D.I.T.H. (Autorizar Audio)"):
-        mensaje_bienvenida = "Sistemas activados. Soy EDITH. Even dead I'm the hero. Estoy lista para servirte."
+        mensaje_bienvenida = "Sistemas activados. Soy EDITH. Estoy lista para servirte."
         
         try:
             # Generamos el audio de bienvenida
@@ -66,7 +66,7 @@ with st.expander("👁️ Activar Sensores Ópticos"):
         imagen_actual = st.file_uploader("Subir imagen", type=['png', 'jpg', 'jpeg'])
 
 # --- ESCÁNER DE DOCUMENTOS ---
-with st.expander("📂 Escáner de Archivos"):
+with st.expander("Subir archivos"):
     archivo_subido = st.file_uploader("Subir documento (PDF o TXT)", type=['txt', 'pdf'])
     texto_documento = ""
     if archivo_subido is not None:
@@ -75,7 +75,7 @@ with st.expander("📂 Escáner de Archivos"):
 
 # --- CONTROLES DE AUDIO / TEXTO ---
 audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
-texto_manual = st.chat_input("Comando (o pregunta sobre la foto)...")
+texto_manual = st.chat_input("Escribe...")
 
 # --- PROCESAMIENTO CENTRAL ---
 user_text = None
@@ -84,14 +84,15 @@ if audio_data:
 elif texto_manual:
     user_text = texto_manual
 
-
 # El sistema se activa si hablaste/escribiste, o si simplemente tomaste una foto
 if user_text or imagen_actual:
     try:
         texto_log = user_text if user_text else "[Imagen enviada]"
         
-      # --- NUEVO: DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
+        # --- 1. DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
         texto_youtube = ""
+        hubo_error_yt = False # Bandera de seguridad activada
+        
         if user_text:
             match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
             if match_yt:
@@ -100,15 +101,30 @@ if user_text or imagen_actual:
                 
                 transcripcion = youtube.obtener_transcripcion(url_encontrada)
                 
-                # Si falló, mostramos el error en rojo en la pantalla
+                # Si falló, mostramos el error y activamos el protocolo de emergencia
                 if transcripcion.startswith("ERROR_INTERNO"):
                     st.error(f"🚨 Falla en extracción de video: {transcripcion}")
+                    hubo_error_yt = True
+                    # Salvavidas: Definimos la respuesta para que la app no explote
+                    respuesta = "Señor, no pude acceder a los subtítulos de ese video. Es probable que estén bloqueados o no existan."
                 else:
                     # Si funcionó, le pasamos el guion a la IA
                     st.success("✅ Guion extraído con éxito. Procesando...")
                     texto_youtube = f"\n\n--- GUION DEL VIDEO DE YOUTUBE ---\n{transcripcion}"
-                    
         
+        # --- 2. ENRUTAMIENTO (Cerebro vs Visión) ---
+        # Si NO hubo error con YouTube, dejamos que la IA piense normalmente
+        if not hubo_error_yt:
+            # Juntamos documento escaneado (si hay) con guion de YouTube (si hay)
+            contexto_unificado = texto_documento + texto_youtube
+            
+            if imagen_actual:
+                # Procesamiento visual
+                respuesta = vision.analizar_imagen(imagen_actual.getvalue(), user_text)
+            else:
+                # Procesamiento lógico normal
+                respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_unificado)
+                
                # Guardamos en el historial visual
         st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
         st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
