@@ -121,12 +121,17 @@ with st.expander("Subir archivos"):
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
 
 # --- CONTROLES DE AUDIO / TEXTO ---
+st.markdown("### 🎙️ Sistema de Voz")
+
 audio_data = mic_recorder(
-    start_prompt="HABLAR AHORA", 
-    stop_prompt="ESCUCHANDO...", 
-    key='recorder_original',
+    start_prompt="🔴 HABLAR AHORA", 
+    stop_prompt="🛑 ESCUCHANDO...", 
+    key='microfono_fijo_visible',
     just_once=True
 )
+
+# El campo de fuerza: Espacio vacío para que la barra no aplaste el botón
+st.markdown("<br><br><br>", unsafe_allow_html=True)
 
 texto_manual = st.chat_input("Escribe...")
 
