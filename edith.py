@@ -120,21 +120,12 @@ with st.expander("Subir archivos"):
         texto_documento = herramientas.extraer_texto(archivo_subido)
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
 
+
 # --- CONTROLES DE AUDIO / TEXTO ---
-st.markdown("### 🎙️ Sistema de Voz")
-
-audio_data = mic_recorder(
-    start_prompt="🔴 HABLAR AHORA", 
-    stop_prompt="🛑 ESCUCHANDO...", 
-    key='microfono_fijo_visible',
-    just_once=True
-)
-
-# El campo de fuerza: Espacio vacío para que la barra no aplaste el botón
-st.markdown("<br><br><br>", unsafe_allow_html=True)
-
+audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
 texto_manual = st.chat_input("Escribe...")
 
+# --- PROCESAMIENTO CENTRAL ---
 user_text = None
 if audio_data:
     user_text = cerebro.transcribir_audio(audio_data['bytes'])
