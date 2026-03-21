@@ -121,13 +121,12 @@ with st.expander("Subir archivos"):
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
 
 # --- CONTROLES DE AUDIO / TEXTO ---
-with st.sidebar:
-    st.title("Controles Tácticos")
-    audio_data = mic_recorder(
-        start_prompt="HABLAR AHORA", 
-        stop_prompt="ESCUCHANDO...", 
-        key='microfono_lateral_seguro'
-    )
+audio_data = mic_recorder(
+    start_prompt="HABLAR AHORA", 
+    stop_prompt="ESCUCHANDO...", 
+    key='recorder_original',
+    just_once=True
+)
 
 texto_manual = st.chat_input("Escribe...")
 
