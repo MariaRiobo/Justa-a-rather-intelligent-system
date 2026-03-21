@@ -121,7 +121,7 @@ with st.expander("Subir archivos"):
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
 
 
--
+
 # --- CONTROLES DE AUDIO / TEXTO ---
 # Usamos el micrófono oficial y nativo (Inbloqueable)
 audio_value = st.audio_input("Transmisor de Voz")
