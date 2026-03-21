@@ -12,45 +12,68 @@ import re
 import youtube
 import memoria
 
-# --- SISTEMA DE AUTENTICACIÓN BIOMÉTRICA (PASSWORD) ---
+# --- SISTEMA DE AUTENTICACIÓN (NUEVO GATILLO) ---
 def check_password():
-    """Devuelve True si el usuario ingresó la contraseña correcta."""
     def password_entered():
         if st.session_state["password"] == st.secrets["PASSWORD_MAESTRO"]:
             st.session_state["password_correct"] = True
-            del st.session_state["password"]  # No guardar la contraseña en el estado
+            
+            # 🎙️ SECUENCIA DE BIENVENIDA AUTOMÁTICA
+            mensaje_bienvenida = "Sistemas activados. Soy E.D.I.T.H. Bienvenida de vuelta, Jefa."
+            try:
+                # Generamos el audio justo al validar
+                audio_b64 = voz.generar_audio(mensaje_bienvenida)
+                st.session_state.audio_key += 1
+                
+                # Guardamos el HTML para inyectarlo apenas pase el stop()
+                st.session_state.audio_saludo_html = f"""
+                    <audio autoplay key="init_{st.session_state.audio_key}">
+                        <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                    </audio>
+                """
+                # Registramos en el historial
+                st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
+                st.session_state.sistemas_activados = True
+                
+            except Exception as e:
+                st.error(f"Fallo en el sintetizador inicial: {e}")
+            
+            del st.session_state["password"] 
         else:
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        # Primera vez, mostrar el input
-        st.text_input("🔑 Ingrese Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
+        st.text_input("Ingrese Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
         st.info("Sistemas en espera. Identificación requerida.")
         return False
     elif not st.session_state["password_correct"]:
-        # Contraseña incorrecta, mostrar error e input
-        st.text_input("🔑 Ingrese Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
-        st.error("❌ Código incorrecto. Protocolo de defensa activado.")
+        st.text_input("Ingrese Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
+        st.error("Código incorrecto. Protocolo de defensa activado.")
         return False
-    else:
-        # Contraseña correcta
-        return True
+    return True
 
+# 🔐 El "Gatekeeper"
 if not check_password():
-    st.stop() # Bloquea el resto de la app si no hay acceso
+    st.stop()
+
+# --- EJECUCIÓN DEL SALUDO ---
+if "audio_saludo_html" in st.session_state and st.session_state.audio_saludo_html:
+    st.markdown(st.session_state.audio_saludo_html, unsafe_allow_html=True)
+    # Limpiamos para que no se repita al recargar
+    st.session_state.audio_saludo_html = None
     
 # --- CONFIGURACIÓN UI ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
 st.markdown(CSS_STARK, unsafe_allow_html=True)
 st.markdown('<div class="orb"></div><h2 style="text-align: center; color: #00d4ff; letter-spacing: 5px;">E.D.I.T.H.</h2>', unsafe_allow_html=True)
-
-# --- INICIALIZACIÓN ---
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "audio_key" not in st.session_state:
-    st.session_state.audio_key = 0
+st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
+# --- INICIALIZACIÓN DE ESTADOS ---
 if "sistemas_activados" not in st.session_state:
     st.session_state.sistemas_activados = False
+if "audio_key" not in st.session_state:
+    st.session_state.audio_key = 0
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 audio_placeholder = st.empty()
 
@@ -85,7 +108,7 @@ if not st.session_state.sistemas_activados:
         st.session_state.sistemas_activados = True
         
 # --- SENSORES ÓPTICOS (NUEVO) ---
-with st.expander("👁️ Activar Sensores Ópticos"):
+with st.expander("Activar Sensores Ópticos"):
     opcion_vision = st.radio("Modo de entrada:", ["Cámara", "Archivo"], horizontal=True)
     imagen_actual = None
     if opcion_vision == "Cámara":
