@@ -12,6 +12,33 @@ import re
 import youtube
 import memoria
 
+# --- SISTEMA DE AUTENTICACIÓN BIOMÉTRICA (PASSWORD) ---
+def check_password():
+    """Devuelve True si el usuario ingresó la contraseña correcta."""
+    def password_entered():
+        if st.session_state["password"] == st.secrets["PASSWORD_MAESTRO"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # No guardar la contraseña en el estado
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # Primera vez, mostrar el input
+        st.text_input("🔑 Ingrese Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
+        st.info("Sistemas en espera. Identificación requerida.")
+        return False
+    elif not st.session_state["password_correct"]:
+        # Contraseña incorrecta, mostrar error e input
+        st.text_input("🔑 Ingrese Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
+        st.error("❌ Código incorrecto. Protocolo de defensa activado.")
+        return False
+    else:
+        # Contraseña correcta
+        return True
+
+if not check_password():
+    st.stop() # Bloquea el resto de la app si no hay acceso
+    
 # --- CONFIGURACIÓN UI ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
 st.markdown(CSS_STARK, unsafe_allow_html=True)
