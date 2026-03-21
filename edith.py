@@ -90,27 +90,24 @@ if user_text or imagen_actual:
     try:
         texto_log = user_text if user_text else "[Imagen enviada]"
         
-        # --- NUEVO: DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
+      # --- NUEVO: DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
         texto_youtube = ""
         if user_text:
-            # Buscamos si hay un enlace de YouTube escondido en tu texto
             match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
             if match_yt:
                 url_encontrada = match_yt.group(1)
-                st.info("📹 Enlace detectado. Extrayendo subtítulos del servidor de YouTube...")
+                st.info("📹 Enlace detectado. Hackeando base de datos de YouTube...")
+                
                 transcripcion = youtube.obtener_transcripcion(url_encontrada)
-                texto_youtube = f"\n\n--- GUION DEL VIDEO DE YOUTUBE ---\n{transcripcion}"
-        
-        # Juntamos los documentos subidos con el guion del video (por si usas ambos)
-        contexto_unificado = texto_documento + texto_youtube
-        
-        # Enrutamiento: ¿Usamos los ojos o solo el cerebro?
-        if imagen_actual:
-            respuesta = vision.analizar_imagen(imagen_actual.getvalue(), user_text)
-        else:
-            # Procesamiento lógico normal pasándole el contexto extra
-            respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_unificado)
-            
+                
+                # Si falló, mostramos el error en rojo en la pantalla
+                if transcripcion.startswith("ERROR_INTERNO"):
+                    st.error(f"🚨 Falla en extracción de video: {transcripcion}")
+                else:
+                    # Si funcionó, le pasamos el guion a la IA
+                    st.success("✅ Guion extraído con éxito. Procesando...")
+                    texto_youtube = f"\n\n--- GUION DEL VIDEO DE YOUTUBE ---\n{transcripcion}"
+                    
         
                # Guardamos en el historial visual
         st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
