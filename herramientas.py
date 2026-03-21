@@ -2,6 +2,7 @@ import datetime
 import requests
 import pytz
 import wikipedia
+from bs4 import BeautifulSoup
 import PyPDF2
 import io
 
@@ -96,7 +97,38 @@ def obtener_clima(ciudad="Buenos Aires"):
     except Exception as e:
         return "Error de conexión con el satélite Climático"
 
+def buscar_en_internet(consulta):
+    """Buscador táctico optimizado para resultados en vivo."""
+    try:
+        # Forzamos a DuckDuckGo a buscar resultados y marcadores específicos
+        query = f"{consulta} resultado marcador final hoy"
+        url = f"https://html.duckduckgo.com/html/?q={query.replace(' ', '+')}"
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+        }
 
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code != 200:
+            return "Error: Interferencia en la señal."
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        resultados = soup.find_all('div', class_='result__body')
+        
+        if not resultados:
+            return "No se detectaron marcadores claros en la zona."
+
+        reporte = "DATOS DE CAMPO DETECTADOS:\n"
+        # Tomamos los 5 primeros para darle más chances a la IA de encontrar el número
+        for res in resultados[:5]:
+            titulo = res.find('a', class_='result__a').text
+            snippet = res.find('a', class_='result__snippet').text
+            reporte += f"FUENTE: {titulo}\nINFO: {snippet}\n\n"
+            
+        return reporte
+
+    except Exception as e:
+        return f"Fallo en el escáner: {str(e)}"
         
 def buscar_en_wikipedia(consulta):
     """Consulta la base de datos histórica."""
