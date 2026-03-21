@@ -2,6 +2,7 @@ import streamlit as st
 from groq import Groq
 from config import SYSTEM_PROMPT
 import herramientas
+import youtube
 
 # Configuración del cliente Groq
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -41,17 +42,14 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         contexto_inyectado += "Si hay precios o resultados, dálos como información oficial de Industrias Stark."
         contexto_inyectado += "No digas que no tienes internet."
 
-    # Inyección 2: Documentos escaneados (¡NUEVO!)
-           # Inyección 2: Documentos escaneados
+    # Inyección 2: Documentos escaneados o Videos de YouTube
     if texto_documento:
-        contexto_inyectado += f"\n\n--- DOCUMENTO ESCANEADO EN MEMORIA ---\n"
-        # 1. Primero le pasamos el texto (lo bajamos a 8000 para dejar margen)
+        contexto_inyectado += f"\n\n--- BASE DE CONOCIMIENTO (DOCUMENTO O VIDEO) ---\n"
         contexto_inyectado += f"{texto_documento[:8000]}\n"
-        # 2. DESPUÉS le damos la orden estricta para que no la olvide
-        contexto_inyectado += "\n[DIRECTIVA DE SISTEMA CRÍTICA]: Acabas de leer el documento. "
+        contexto_inyectado += "\n[DIRECTIVA DE SISTEMA CRÍTICA]: Acabas de procesar un archivo o la transcripción de un video. "
         contexto_inyectado += "Tu respuesta DEBE ser hablada. Resume el contenido en un MÁXIMO ABSOLUTO de 3 oraciones cortas. "
         contexto_inyectado += "ESTÁ TOTALMENTE PROHIBIDO usar listas, viñetas o textos largos. Ve directo al grano."
-
+        
     # Empaquetamos todo el contexto en el Sistema
     mensajes_api = [{"role": "system", "content": contexto_inyectado}]
     
