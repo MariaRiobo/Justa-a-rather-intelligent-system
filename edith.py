@@ -16,8 +16,17 @@ if "sistemas_activados" not in st.session_state:
     st.session_state.sistemas_activados = False
 if "audio_key" not in st.session_state:
     st.session_state.audio_key = 0
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+f "chat_history" not in st.session_state:
+    # Intentamos recuperar la memoria a largo plazo
+    recuerdos = memoria.obtener_contexto_memoria()
+    if recuerdos:
+        # Si hay algo guardado, lo cargamos como el primer mensaje de EDITH
+        st.session_state.chat_history = [{
+            "autor": "EDITH", 
+            "msg": "Registros recuperados. Estoy al tanto de nuestras sesiones previas, Comandante."
+        }]
+    else:
+        st.session_state.chat_history = []
 if "ejecutar_saludo" not in st.session_state:
     st.session_state.ejecutar_saludo = False
 if "password_correct" not in st.session_state:
@@ -171,6 +180,9 @@ if user_text or imagen_actual:
         st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
         st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
         
+        # 💾 PROTOCOLO DE PERSISTENCIA: Guardamos la interacción en la base de datos JSON
+        registro_memoria = f"Usuario dijo: {texto_log} | EDITH respondió: {respuesta}"
+        memoria.agregar_recuerdo(registro_memoria)
         
         # --- FILTRO PURIFICADOR DE VOZ ---
         # Le quitamos asteriscos, numerales y guiones que traban al sintetizador
