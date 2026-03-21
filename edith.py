@@ -8,6 +8,8 @@ from config import CSS_STARK
 import cerebro
 import voz
 import vision # <--- NUEVO MÓDULO
+import re
+import youtube
 
 # --- CONFIGURACIÓN UI ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
@@ -82,18 +84,33 @@ if audio_data:
 elif texto_manual:
     user_text = texto_manual
 
+
 # El sistema se activa si hablaste/escribiste, o si simplemente tomaste una foto
 if user_text or imagen_actual:
     try:
         texto_log = user_text if user_text else "[Imagen enviada]"
         
+        # --- NUEVO: DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
+        texto_youtube = ""
+        if user_text:
+            # Buscamos si hay un enlace de YouTube escondido en tu texto
+            match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
+            if match_yt:
+                url_encontrada = match_yt.group(1)
+                st.info("📹 Enlace detectado. Extrayendo subtítulos del servidor de YouTube...")
+                transcripcion = youtube.obtener_transcripcion(url_encontrada)
+                texto_youtube = f"\n\n--- GUION DEL VIDEO DE YOUTUBE ---\n{transcripcion}"
+        
+        # Juntamos los documentos subidos con el guion del video (por si usas ambos)
+        contexto_unificado = texto_documento + texto_youtube
+        
         # Enrutamiento: ¿Usamos los ojos o solo el cerebro?
         if imagen_actual:
-            # Procesamiento visual
             respuesta = vision.analizar_imagen(imagen_actual.getvalue(), user_text)
         else:
-            # Procesamiento lógico normal
-            respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, texto_documento)
+            # Procesamiento lógico normal pasándole el contexto extra
+            respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_unificado)
+            
         
                # Guardamos en el historial visual
         st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
