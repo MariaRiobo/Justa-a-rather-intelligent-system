@@ -3,6 +3,7 @@ from groq import Groq
 from config import SYSTEM_PROMPT
 import herramientas
 import youtube
+import busqueda
 
 # Configuración del cliente Groq
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -12,26 +13,21 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     texto_min = texto_usuario.lower()
     datos_extra = ""
 
-    # PRIORIDAD 1: Sensor de Divisas (Dólar)
-    if "dolar" in texto_min or "dólar" in texto_min:
-        with st.spinner("Accediendo a la base de datos financiera..."):
-            datos_extra = herramientas.obtener_cotizacion_dolar()
+ # --- NUEVO PASO 1: SENSORES TÁCTICOS ---
+    # Sensores Fijos (Directos de herramientas)
+    if any(w in texto_min for w in ["dolar", "dólar"]):
+        datos_extra = herramientas.obtener_cotizacion_dolar()
+    elif any(w in texto_min for w in ["clima", "temperatura", "tiempo", "pronóstico"]):
+        datos_extra = herramientas.obtener_clima()
+    elif any(w in texto_min for w in ["hora", "fecha", "día"]):
+        datos_extra = herramientas.obtener_fecha_hora()
+    
+    # Sensor de Red (Google a través de busqueda.py)
+    # Si no es ninguna de las anteriores pero pregunta algo de actualidad:
+    elif any(w in texto_min for w in ["quien", "quién", "noticias", "resultado", "jugó", "partido", "pasó", "precio"]):
+        with st.spinner("🌐 E.D.I.T.H. consultando satélites de red..."):
+            datos_extra = busqueda.buscar_en_red(texto_usuario)
             
-    # PRIORIDAD 2: Rastreo Meteorológico
-    elif any(w in texto_min for w in ["clima", "temperatura", "tiempo", "llover", "lluvia", "pronóstico", "mañana", "semana"]):
-        with st.spinner("Consultando satélites meteorológicos..."):
-            datos_extra = herramientas.obtener_clima()
-            
-    # PRIORIDAD NUEVA: Reloj del Sistema (¡AQUÍ ESTÁ EL ARREGLO!)
-    elif any(w in texto_min for w in ["hora", "fecha", "día", "dia", "qué hora"]):
-        with st.spinner("Sincronizando reloj atómico..."):
-            datos_extra = herramientas.obtener_fecha_hora()        
-
-    # PRIORIDAD 3: Rastreo Web General (Boca, noticias, etc.)
-    elif any(w in texto_min for w in ["boca", "river", "partido", "resultado", "jugó", "noticias", "precio", "quien es", "quién es"]):
-        with st.spinner("E.D.I.T.H. rastreando la red..."):
-            datos_extra = herramientas.buscar_en_internet(texto_usuario)
-
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
     
