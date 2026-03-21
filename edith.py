@@ -26,8 +26,8 @@ if "password_correct" not in st.session_state:
  # --- CONFIGURACIÓN UI ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
 st.markdown(CSS_STARK, unsafe_allow_html=True)
-st.markdown('<div class="orb"></div><h2 style="text-align: center; color: #00d4ff; letter-spacing: 5px;">E.D.I.T.H.</h2>', unsafe_allow_html=True)
-st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
+
+
 audio_placeholder = st.empty()   
 
 # --- 3. SISTEMA DE AUTENTICACIÓN STARK ---
@@ -44,7 +44,7 @@ def check_password():
         return True
 
     # Interfaz de Login (Lo único que se ve si no hay acceso)
-    st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
+   
     st.text_input("Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
         st.error("Código incorrecto. Protocolo de defensa activo.")
