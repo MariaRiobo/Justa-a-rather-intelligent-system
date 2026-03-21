@@ -10,6 +10,7 @@ import voz
 import vision # <--- NUEVO MÓDULO
 import re
 import youtube
+import memoria
 
 # --- CONFIGURACIÓN UI ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
@@ -112,22 +113,43 @@ if user_text or imagen_actual:
                     st.success("✅ Guion extraído con éxito. Procesando...")
                     texto_youtube = f"\n\n--- GUION DEL VIDEO DE YOUTUBE ---\n{transcripcion}"
         
+      # --- 1.5 INTERCEPTOR DE MEMORIA A LARGO PLAZO ---
+        prompt_oculto = user_text
+        if user_text:
+            comando_min = user_text.lower()
+            if "recuerda que" in comando_min:
+                # Extraemos el recuerdo y lo guardamos en el JSON
+                nuevo_recuerdo = comando_min.split("recuerda que")[1].strip()
+                memoria.agregar_recuerdo(nuevo_recuerdo)
+                # Hackeamos el prompt para que la IA sepa que ya lo guardamos
+                prompt_oculto = f"El usuario te ordenó guardar este recuerdo: '{nuevo_recuerdo}'. Ya lo guardé en el disco duro local. Confirma brevemente por voz que lo recordarás para siempre."
+            
+            elif "olvida que" in comando_min:
+                # Extraemos y borramos del JSON
+                recuerdo_a_borrar = comando_min.split("olvida que")[1].strip()
+                memoria.borrar_recuerdo(recuerdo_a_borrar)
+                prompt_oculto = f"El usuario te pidió olvidar esto: '{recuerdo_a_borrar}'. Ya lo borré de tu disco duro. Confirma brevemente que lo has eliminado de tu base de datos."
+
         # --- 2. ENRUTAMIENTO (Cerebro vs Visión) ---
         # Si NO hubo error con YouTube, dejamos que la IA piense normalmente
         if not hubo_error_yt:
-            # Juntamos documento escaneado (si hay) con guion de YouTube (si hay)
-            contexto_unificado = texto_documento + texto_youtube
+            # Traemos todos los recuerdos pasados
+            contexto_historico = memoria.obtener_contexto_memoria()
+            
+            # Juntamos documentos + YouTube + MEMORIA PROFUNDA
+            contexto_unificado = texto_documento + texto_youtube + contexto_historico
             
             if imagen_actual:
-                # Procesamiento visual
-                respuesta = vision.analizar_imagen(imagen_actual.getvalue(), user_text)
+                # Procesamiento visual (le pasamos el prompt oculto por si acaso)
+                respuesta = vision.analizar_imagen(imagen_actual.getvalue(), prompt_oculto)
             else:
-                # Procesamiento lógico normal
-                respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_unificado)
+                # Procesamiento lógico normal usando el prompt hackeado
+                respuesta = cerebro.pensar_respuesta(prompt_oculto, st.session_state.chat_history, contexto_unificado)
                 
-               # Guardamos en el historial visual
+        # Guardamos en el historial visual (usamos texto_log para que en pantalla salga lo que dijiste, no el hackeo)
         st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
         st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+        
         
         # --- FILTRO PURIFICADOR DE VOZ ---
         # Le quitamos asteriscos, numerales y guiones que traban al sintetizador
