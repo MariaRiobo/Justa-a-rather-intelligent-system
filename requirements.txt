@@ -7,4 +7,4 @@ wikipedia
 beautifulsoup4
 pytz
 PyPDF2
-youtube-transcript-api==0.6.2
+
