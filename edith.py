@@ -12,6 +12,24 @@ import re
 import youtube
 import memoria
 
+if "sistemas_activados" not in st.session_state:
+    st.session_state.sistemas_activados = False
+if "audio_key" not in st.session_state:
+    st.session_state.audio_key = 0
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "ejecutar_saludo" not in st.session_state:
+    st.session_state.ejecutar_saludo = False
+if "password_correct" not in st.session_state:
+    st.session_state.password_correct = False
+    
+ # --- CONFIGURACIÓN UI ---
+st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
+st.markdown(CSS_STARK, unsafe_allow_html=True)
+st.markdown('<div class="orb"></div><h2 style="text-align: center; color: #00d4ff; letter-spacing: 5px;">E.D.I.T.H.</h2>', unsafe_allow_html=True)
+st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
+audio_placeholder = st.empty()   
+
 # --- 3. SISTEMA DE AUTENTICACIÓN STARK ---
 def check_password():
     def password_entered():
@@ -27,50 +45,32 @@ def check_password():
 
     # Interfaz de Login (Lo único que se ve si no hay acceso)
     st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
-    st.text_input("🔑 Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
+    st.text_input("Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-        st.error("❌ Código incorrecto. Protocolo de defensa activo.")
+        st.error("Código incorrecto. Protocolo de defensa activo.")
     st.stop() 
 
 # Ejecutar el bloqueo
 check_password()
 
 # --- 4. PROTOCOLO DE BIENVENIDA AUTOMÁTICO ---
-# Se ejecuta solo una vez, inmediatamente después del login exitoso
 if st.session_state.ejecutar_saludo:
     mensaje_bienvenida = "Sistemas activados. Soy E.D.I.T.H. Bienvenida de vuelta, Jefa."
     try:
-        # Audio
         audio_b64 = voz.generar_audio(mensaje_bienvenida)
         st.session_state.audio_key += 1
-        audio_html = f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>'
-        st.markdown(audio_html, unsafe_allow_html=True)
         
-        # Chat
+        # Inyección directa con markdown para asegurar el autoplay
+        st.markdown(f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>', unsafe_allow_html=True)
+        
+        # Registro en chat
         st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
         st.session_state.sistemas_activados = True
-        st.session_state.ejecutar_saludo = False # Apagar gatillo
+        st.session_state.ejecutar_saludo = False 
     except Exception as e:
-        st.error(f"Fallo en el sintetizador inicial: {e}")
+        st.error(f"Fallo en el saludo inicial: {e}")
     
-# --- CONFIGURACIÓN UI ---
-st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓")
-st.markdown(CSS_STARK, unsafe_allow_html=True)
-st.markdown('<div class="orb"></div><h2 style="text-align: center; color: #00d4ff; letter-spacing: 5px;">E.D.I.T.H.</h2>', unsafe_allow_html=True)
-st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
 
-
-# --- INICIALIZACIÓN DE ESTADOS ---
-if "sistemas_activados" not in st.session_state:
-    st.session_state.sistemas_activados = False
-if "audio_key" not in st.session_state:
-    st.session_state.audio_key = 0
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "ejecutar_saludo" not in st.session_state:
-    st.session_state.ejecutar_saludo = False
-
-audio_placeholder = st.empty()
 
 
 # --- SENSORES ÓPTICOS (NUEVO) ---
