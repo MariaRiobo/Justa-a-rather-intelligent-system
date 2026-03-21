@@ -16,7 +16,7 @@ if "sistemas_activados" not in st.session_state:
     st.session_state.sistemas_activados = False
 if "audio_key" not in st.session_state:
     st.session_state.audio_key = 0
-f "chat_history" not in st.session_state:
+if "chat_history" not in st.session_state:
     # Intentamos recuperar la memoria a largo plazo
     recuerdos = memoria.obtener_contexto_memoria()
     if recuerdos:
