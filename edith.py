@@ -119,8 +119,8 @@ with st.expander("Escáner de Documentos"):
 
 # --- 8. PROCESAMIENTO CENTRAL ---
 user_text = None
-if audio_bytes:
-    user_text = cerebro.transcribir_audio(audio_bytes)
+if audio_data:
+    user_text = cerebro.transcribir_audio(audio_data['bytes'])
 elif texto_manual:
     user_text = texto_manual
 
