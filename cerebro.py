@@ -49,14 +49,14 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     # Empaquetamos todo el contexto en el Sistema
     mensajes_api = [{"role": "system", "content": contexto_inyectado}]
     
-    # Memoria (últimos 4 mensajes)
-    for item in historial[-4:]:
+   # Memoria de corto plazo (Últimos 6 mensajes para mayor contexto)
+    for item in historial[-6:]:
+        # Identificamos quién dijo qué
         role = "assistant" if item.get("autor") == "EDITH" else "user"
-        mensajes_api.append({"role": role, "content": item.get("msg")})
-    
-   # Agregamos la instrucción actual del usuario
-    mensajes_api.append({"role": "user", "content": texto_usuario})
-
+        msg_content = item.get("msg", "")
+        if msg_content: # Solo agregamos si el mensaje no está vacío
+            mensajes_api.append({"role": role, "content": msg_content})
+            
     # 🔋 LISTA DE REACTORES DE RESPALDO (En orden de potencia)
     modelos_disponibles = [
         "llama-3.3-70b-versatile",  # Reactor Principal
