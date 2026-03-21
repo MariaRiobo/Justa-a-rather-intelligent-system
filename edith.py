@@ -76,7 +76,7 @@ def check_password():
         return True
 
     # Interfaz de Login (Si no hay cookie o es la primera vez)
-    st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
+   
     st.text_input("Identificación Requerida:", type="password", on_change=password_entered, key="password")
     
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
