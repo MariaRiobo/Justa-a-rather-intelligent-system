@@ -13,10 +13,20 @@ def obtener_transcripcion(url):
         return "ERROR_INTERNO: No se pudo detectar el ID exacto del video."
         
     try:
-        # Método clásico a prueba de versiones antiguas (busca en español o inglés)
-        transcripcion = YouTubeTranscriptApi.get_transcript(video_id, languages=['es', 'en', 'es-419'])
+        # Obtenemos la lista de todas las pistas disponibles en el video
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
         
-        texto_completo = " ".join([fragmento['text'] for fragmento in transcripcion])
+        try:
+            # Intentamos buscar español o inglés primero
+            transcript = transcript_list.find_transcript(['es', 'es-419', 'es-ES', 'en', 'en-US'])
+        except:
+            # Si no encuentra esos idiomas, agarra EL PRIMERO que exista en la lista a la fuerza
+            transcript = next(iter(transcript_list))
+            
+        # Descargamos el texto
+        datos = transcript.fetch()
+        texto_completo = " ".join([fragmento['text'] for fragmento in datos])
+        
         return texto_completo
         
     except Exception as e:
