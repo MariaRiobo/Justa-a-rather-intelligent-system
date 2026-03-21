@@ -3,6 +3,7 @@ import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 import herramientas
 import extra_streamlit_components as stx
+from audio_recorder_streamlit import audio_recorder
 
 # Módulos Stark
 from config import CSS_STARK
@@ -84,25 +85,19 @@ if st.session_state.ejecutar_saludo:
     except Exception as e:
         st.error(f"Fallo en el saludo inicial: {e}")
 
-# --- 6. CONTROLES PRINCIPALES ---
-# Creamos un bloque visual exclusivo para forzar la renderización del micrófono
-st.markdown("---")
-with st.container():
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        audio_data = mic_recorder(
-            start_prompt="HABLAR", 
-            stop_prompt="ESCUCHANDO", 
-            key='mic_stark_v2',  # Cambiamos la llave para resetear su memoria
-            just_once=True
-        )
-    with col2:
-        st.caption("👈 Presiona para activar el canal de voz")
-
+# --- 6. CONTROLES PRINCIPALES (DISEÑO STARK ORIGINAL) ---
+audio_bytes = audio_recorder(
+    text="",
+    recording_color="#00d4ff",
+    neutral_color="#ffffff",
+    icon_name="microphone",
+    icon_size="3x",
+    key="mic_principal"
+)
 texto_manual = st.chat_input("Escribe tu orden...")
 
 # --- 7. SENSORES ÓPTICOS Y ESCÁNER ---
-with st.expander("👁️ Activar Sensores Ópticos"):
+with st.expander(" Activar Sensores Ópticos"):
     opcion_vision = st.radio("Modo de entrada:", ["Cámara", "Archivo"], horizontal=True)
     imagen_actual = None
     if opcion_vision == "Cámara":
@@ -110,7 +105,7 @@ with st.expander("👁️ Activar Sensores Ópticos"):
     else:
         imagen_actual = st.file_uploader("Subir imagen", type=['png', 'jpg', 'jpeg'])
 
-with st.expander("📄 Escáner de Documentos"):
+with st.expander("Escáner de Documentos"):
     archivo_subido = st.file_uploader("Subir documento (PDF o TXT)", type=['txt', 'pdf'])
     texto_documento = ""
     if archivo_subido is not None:
@@ -119,8 +114,8 @@ with st.expander("📄 Escáner de Documentos"):
 
 # --- 8. PROCESAMIENTO CENTRAL ---
 user_text = None
-if audio_data:
-    user_text = cerebro.transcribir_audio(audio_data['bytes'])
+if audio_bytes:
+    user_text = cerebro.transcribir_audio(audio_bytes)
 elif texto_manual:
     user_text = texto_manual
 
