@@ -1,28 +1,32 @@
-# youtube.py
 from youtube_transcript_api import YouTubeTranscriptApi
 import re
 
 def extraer_id_youtube(url):
-    """Extrae el ID único del video de cualquier tipo de enlace de YouTube."""
-    patron = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
+    """Regex nivel Stark para capturar cualquier tipo de link (Shorts, mobile, web)"""
+    patron = r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'
     match = re.search(patron, url)
     return match.group(1) if match else None
 
 def obtener_transcripcion(url):
-    """Descarga los subtítulos del video para que E.D.I.T.H. los lea."""
     video_id = extraer_id_youtube(url)
     
     if not video_id:
-        return "Error: Formato de enlace de YouTube no reconocido."
+        return "ERROR_INTERNO: No se pudo detectar el ID exacto del video en el enlace."
         
     try:
-        # Intentamos descargar subtítulos en español o inglés
-        transcripcion = YouTubeTranscriptApi.get_transcript(video_id, languages=['es', 'en'])
+        # Obtenemos la lista de todas las pistas de subtítulos del video
+        lista_transcripciones = YouTubeTranscriptApi.list_transcripts(video_id)
         
-        # Unimos todas las frases en un solo texto gigante
-        texto_completo = " ".join([fragmento['text'] for fragmento in transcripcion])
-        
+        try:
+            # Buscamos primero en español o inglés
+            transcripcion = lista_transcripciones.find_transcript(['es', 'en'])
+        except:
+            # Si no hay, agarramos la primera que exista en la lista a la fuerza
+            transcripcion = [t for t in lista_transcripciones][0]
+            
+        datos = transcripcion.fetch()
+        texto_completo = " ".join([fragmento['text'] for fragmento in datos])
         return texto_completo
         
     except Exception as e:
-        return f"Error al extraer datos. Es posible que el video no tenga subtítulos automáticos o manuales. Detalle: {e}"
+        return f"ERROR_INTERNO: Este video no tiene subtítulos (ni siquiera automáticos) o están bloqueados. Detalle: {e}"
