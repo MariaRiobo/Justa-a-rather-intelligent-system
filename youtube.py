@@ -1,9 +1,8 @@
 import re
 import requests
-import html
 
 def extraer_id_youtube(url):
-    """Extrae el ID del video de cualquier tipo de link."""
+    """Extrae el ID del video de cualquier link de YouTube."""
     patron = r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'
     match = re.search(patron, url)
     return match.group(1) if match else None
@@ -15,32 +14,37 @@ def obtener_transcripcion(url):
         return "ERROR_INTERNO: No se pudo detectar el ID exacto del video."
         
     try:
-        # 🛰️ PROTOCOLO DE EVASIÓN: Nos conectamos al servidor puente
-        enlace_puente = f"https://youtubetranscript.com/?server_vid2={video_id}"
+        # 🛰️ PLAN C: Conexión directa a la API REST gratuita de TubeText
+        api_url = f"https://tubetext.vercel.app/youtube/transcript?video_id={video_id}"
         
-        # Hacemos la petición fingiendo ser un navegador normal para mayor seguridad
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        respuesta = requests.get(enlace_puente, headers=headers)
+        respuesta = requests.get(api_url, headers=headers)
         
         if respuesta.status_code != 200:
-            return "ERROR_INTERNO: El servidor puente no responde."
+            return f"ERROR_INTERNO: La API satelital no responde (Código {respuesta.status_code})."
             
-        contenido = respuesta.text
+        datos = respuesta.json()
         
-        # Verificamos si el puente nos devolvió un error de YouTube
-        if "error" in contenido.lower() and "<text" not in contenido:
-            return "ERROR_INTERNO: El video no tiene subtítulos o están fuertemente bloqueados."
+        # Validamos estrictamente si la API nos devolvió éxito (nada de falsos positivos)
+        if not datos.get("success"):
+            return "ERROR_INTERNO: La API satelital no pudo extraer los subtítulos de este video."
             
-        # Extraemos solo el texto limpio de las etiquetas XML que nos devuelve el puente
-        etiquetas_texto = re.findall(r'<text[^>]*>(.*?)</text>', contenido)
+        data_block = datos.get("data", {})
         
-        if not etiquetas_texto:
-            return "ERROR_INTERNO: El servidor puente no encontró texto."
+        # Intentamos obtener el texto unificado
+        texto_completo = data_block.get("full_text")
+        
+        # Si el texto unificado no viene, lo ensamblamos desde los fragmentos
+        if not texto_completo:
+            fragmentos = data_block.get("transcript", [])
+            if isinstance(fragmentos, list):
+                # Unimos todos los pedazos de texto en un solo párrafo
+                texto_completo = " ".join(str(f) for f in fragmentos)
+        
+        if not texto_completo:
+            return "ERROR_INTERNO: La API satelital devolvió un archivo vacío."
             
-        # Limpiamos códigos raros de HTML (como &quot; o &amp;)
-        texto_completo = " ".join([html.unescape(fragmento) for fragmento in etiquetas_texto])
-        
         return texto_completo
         
     except Exception as e:
-        return f"ERROR_INTERNO: Fallo en el satélite puente. Detalle: {e}"
+        return f"ERROR_INTERNO: Fallo general de conexión. Detalle: {e}"
