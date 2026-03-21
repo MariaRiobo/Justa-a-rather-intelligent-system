@@ -121,8 +121,6 @@ with st.expander("Subir archivos"):
         st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
 
 # --- CONTROLES DE AUDIO / TEXTO ---
-with st.container():
-    st.caption("🎙️ Control de Voz:")
     audio_data = mic_recorder(
         start_prompt="HABLAR AHORA", 
         stop_prompt="ESCUCHANDO...", 
