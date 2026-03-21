@@ -1,3 +1,4 @@
+# app.py (Guardado en tu caso como edith.py)
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 import herramientas
@@ -7,10 +8,11 @@ import extra_streamlit_components as stx
 from config import CSS_STARK
 import cerebro
 import voz
-import vision 
+import vision # <--- NUEVO MÓDULO
 import re
 import youtube
 import memoria
+
 
 if "sistemas_activados" not in st.session_state:
     st.session_state.sistemas_activados = False
@@ -20,6 +22,7 @@ if "chat_history" not in st.session_state:
     # Intentamos recuperar la memoria a largo plazo
     recuerdos = memoria.obtener_contexto_memoria()
     if recuerdos:
+        # Si hay algo guardado, lo cargamos como el primer mensaje de EDITH
         st.session_state.chat_history = [{
             "autor": "EDITH", 
             "msg": "Registros recuperados. Estoy al tanto de nuestras sesiones previas, Francis."
@@ -35,6 +38,7 @@ if "password_correct" not in st.session_state:
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
 st.markdown(CSS_STARK, unsafe_allow_html=True)
 
+# 👇 ESTA ES LA ÚNICA VEZ QUE DIBUJAMOS EL ORBE Y EL TÍTULO 👇
 st.markdown("""
     <div class="orb"></div>
     <h1 class="edith_title">E.D.I.T.H.</h1>
@@ -44,9 +48,13 @@ audio_placeholder = st.empty()
 
 # --- SISTEMA DE RECONOCIMIENTO DE DISPOSITIVO (COOKIES) ---
 def check_password():
+    # Inicializamos el manejador de cookies
     cookie_manager = stx.CookieManager()
+    
+    # 1. Intentamos leer la "Llave Stark" del navegador
     token_recuerdo = cookie_manager.get(cookie="stark_access_token")
 
+    # 2. Si la cookie existe y es correcta, saltamos el login
     if token_recuerdo == st.secrets["PASSWORD_MAESTRO"]:
         st.session_state["password_correct"] = True
         return True
@@ -55,13 +63,19 @@ def check_password():
         if st.session_state["password"] == st.secrets["PASSWORD_MAESTRO"]:
             st.session_state["password_correct"] = True
             st.session_state["ejecutar_saludo"] = True
+            
+            # 🍪 GUARDAMOS LA LLAVE: Esto hará que te reconozca la próxima vez
+            # Se guarda por 30 días (ajustable)
             cookie_manager.set("stark_access_token", st.secrets["PASSWORD_MAESTRO"], expires_at=None)
+            
             del st.session_state["password"]
         else:
             st.session_state["password_correct"] = False
 
     if st.session_state.get("password_correct"):
         return True
+
+    # Interfaz de Login (Si no hay cookie o es la primera vez)
    
     st.text_input("Identificación Requerida:", type="password", on_change=password_entered, key="password")
     
@@ -78,12 +92,19 @@ if st.session_state.ejecutar_saludo:
     try:
         audio_b64 = voz.generar_audio(mensaje_bienvenida)
         st.session_state.audio_key += 1
+        
+        # Inyección directa con markdown para asegurar el autoplay
         st.markdown(f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>', unsafe_allow_html=True)
+        
+        # Registro en chat
         st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
         st.session_state.sistemas_activados = True
         st.session_state.ejecutar_saludo = False 
     except Exception as e:
         st.error(f"Fallo en el saludo inicial: {e}")
+    
+
+
 
 # --- SENSORES ÓPTICOS (NUEVO) ---
 with st.expander("Activar Sensores Ópticos"):
@@ -113,62 +134,81 @@ if audio_data:
 elif texto_manual:
     user_text = texto_manual
 
+# El sistema se activa si hablaste/escribiste, o si simplemente tomaste una foto
 if user_text or imagen_actual:
     try:
         texto_log = user_text if user_text else "[Imagen enviada]"
         
         # --- 1. DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
         texto_youtube = ""
-        hubo_error_yt = False 
+        hubo_error_yt = False # Bandera de seguridad activada
         
         if user_text:
             match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
             if match_yt:
                 url_encontrada = match_yt.group(1)
                 st.info("📹 Enlace detectado. Hackeando base de datos de YouTube...")
+                
                 transcripcion = youtube.obtener_transcripcion(url_encontrada)
                 
+                # Si falló, mostramos el error y activamos el protocolo de emergencia
                 if transcripcion.startswith("ERROR_INTERNO"):
                     st.error(f"🚨 Falla en extracción de video: {transcripcion}")
                     hubo_error_yt = True
+                    # Salvavidas: Definimos la respuesta para que la app no explote
                     respuesta = "Señor, no pude acceder a los subtítulos de ese video. Es probable que estén bloqueados o no existan."
                 else:
+                    # Si funcionó, le pasamos el guion a la IA
                     st.success("✅ Guion extraído con éxito. Procesando...")
                     texto_youtube = f"\n\n--- GUION DEL VIDEO DE YOUTUBE ---\n{transcripcion}"
         
-        # --- 1.5 INTERCEPTOR DE MEMORIA A LARGO PLAZO ---
+      # --- 1.5 INTERCEPTOR DE MEMORIA A LARGO PLAZO ---
         prompt_oculto = user_text
         if user_text:
             comando_min = user_text.lower()
             if "recuerda que" in comando_min:
+                # Extraemos el recuerdo y lo guardamos en el JSON
                 nuevo_recuerdo = comando_min.split("recuerda que")[1].strip()
                 memoria.agregar_recuerdo(nuevo_recuerdo)
+                # Hackeamos el prompt para que la IA sepa que ya lo guardamos
                 prompt_oculto = f"El usuario te ordenó guardar este recuerdo: '{nuevo_recuerdo}'. Ya lo guardé en el disco duro local. Confirma brevemente por voz que lo recordarás para siempre."
             
             elif "olvida que" in comando_min:
+                # Extraemos y borramos del JSON
                 recuerdo_a_borrar = comando_min.split("olvida que")[1].strip()
                 memoria.borrar_recuerdo(recuerdo_a_borrar)
                 prompt_oculto = f"El usuario te pidió olvidar esto: '{recuerdo_a_borrar}'. Ya lo borré de tu disco duro. Confirma brevemente que lo has eliminado de tu base de datos."
 
         # --- 2. ENRUTAMIENTO (Cerebro vs Visión) ---
+        # Si NO hubo error con YouTube, dejamos que la IA piense normalmente
         if not hubo_error_yt:
+            # Traemos todos los recuerdos pasados
             contexto_historico = memoria.obtener_contexto_memoria()
+            
+            # Juntamos documentos + YouTube + MEMORIA PROFUNDA
             contexto_unificado = texto_documento + texto_youtube + contexto_historico
             
             if imagen_actual:
+                # Procesamiento visual (le pasamos el prompt oculto por si acaso)
                 respuesta = vision.analizar_imagen(imagen_actual.getvalue(), prompt_oculto)
             else:
+                # Procesamiento lógico normal usando el prompt hackeado
                 respuesta = cerebro.pensar_respuesta(prompt_oculto, st.session_state.chat_history, contexto_unificado)
                 
+        # Guardamos en el historial visual (usamos texto_log para que en pantalla salga lo que dijiste, no el hackeo)
         st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
         st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
         
+        # 💾 PROTOCOLO DE PERSISTENCIA: Guardamos la interacción en la base de datos JSON
         registro_memoria = f"Usuario dijo: {texto_log} | EDITH respondió: {respuesta}"
         memoria.agregar_recuerdo(registro_memoria)
         
+        # --- FILTRO PURIFICADOR DE VOZ ---
+        # Le quitamos asteriscos, numerales y guiones que traban al sintetizador
         texto_limpio = respuesta.replace("*", "").replace("#", "").replace("_", "")
         
         try:
+            # Generamos la voz con el texto LIMPIO
             audio_b64 = voz.generar_audio(texto_limpio)
             st.session_state.audio_key += 1
             
@@ -180,6 +220,7 @@ if user_text or imagen_actual:
             audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
             
         except Exception as error_voz:
+            # Si la voz falla, ahora nos avisará con un cartel amarillo sin romper la app
             st.warning(f"🔇 Módulo de voz saturado: {error_voz}")
             
     except Exception as e:
@@ -193,3 +234,4 @@ for item in reversed(st.session_state.chat_history):
     
     with st.chat_message("assistant" if autor == "EDITH" else "user", avatar=avatar):
         st.write(f"**{autor}:** {msg}")
+
