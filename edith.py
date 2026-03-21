@@ -162,6 +162,27 @@ if user_text or imagen_actual:
     try:
         texto_log = user_text if user_text else "[Imagen enviada]"
         
+if user_text:
+    # 1. Detectamos si es una orden de redacción
+    palabras_clave = ["redacta", "escribe", "mandale", "mail", "correo", "mensaje"]
+    es_redaccion = any(palabra in user_text.lower() for palabra in palabras_clave)
+
+    if es_redaccion:
+        with st.spinner("E.D.I.T.H. está preparando la pluma..."):
+            # Le damos una instrucción extra de "Sistema" para que sepa que debe ser un borrador
+            instruccion_redactor = f"La Jefa quiere redactar algo. Usa este contexto: {user_text}. Genera un borrador profesional pero con estilo Stark, indicando Asunto si es mail y el cuerpo del mensaje."
+            respuesta = cerebro.pensar_respuesta(instruccion_redactor, st.session_state.chat_history, "")
+    else:
+        # 2. Si no es redacción, sigue con el flujo normal de charla
+        with st.spinner("E.D.I.T.H. pensando..."):
+            respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, "")
+
+    # Mostramos y guardamos la respuesta
+    st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+    # Forzamos la actualización para que el audio (si lo tienes) suene
+    st.rerun()
+    
+        
         # --- 1. DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
         texto_youtube = ""
         hubo_error_yt = False # Bandera de seguridad activada
