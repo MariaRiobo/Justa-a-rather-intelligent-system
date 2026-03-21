@@ -43,7 +43,7 @@ def obtener_contexto_memoria():
     memoria_actual = cargar_memoria()
     hechos = memoria_actual.get("hechos_clave", [])
     
-    if no hechos:
+    if not hechos:
         return ""
         
     texto_memoria = "\n\n--- MEMORIA A LARGO PLAZO DEL USUARIO ---\n"
