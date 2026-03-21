@@ -58,21 +58,44 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         role = "assistant" if item.get("autor") == "EDITH" else "user"
         mensajes_api.append({"role": role, "content": item.get("msg")})
     
-    # Agregamos la instrucción actual del usuario
+   # Agregamos la instrucción actual del usuario
     mensajes_api.append({"role": "user", "content": texto_usuario})
+
+    # 🔋 LISTA DE REACTORES DE RESPALDO (En orden de potencia)
+    modelos_disponibles = [
+        "llama-3.3-70b-versatile",  # Reactor Principal
+        "llama-3.1-8b-instant",     # Respaldo Rápido
+        "gemma2-9b-it",             # Respaldo Google
+        "mixtral-8x7b-32768"        # Respaldo de Emergencia
+    ]
+
+    # --- PASO 3: LLAMADA A LA API CON PROTOCOLO DE REDUNDANCIA ---
+    for modelo_actual in modelos_disponibles:
+        try:
+            # Intentamos la conexión con el modelo actual de la lista
+            res = client.chat.completions.create(
+                messages=mensajes_api,
+                model=modelo_actual,
+                temperature=0.7
+            )
+            # Si tiene éxito, devolvemos la respuesta y salimos de la función
+            return res.choices[0].message.content
+
+        except Exception as e:
+            error_str = str(e).lower()
+            
+            # Verificamos si el error es por falta de tokens (429 o Rate Limit)
+            if "rate_limit" in error_str or "429" in error_str or "too many requests" in error_str:
+                # Si nos quedamos sin energía, imprimimos aviso y saltamos al siguiente modelo
+                print(f"⚠️ Reactor {modelo_actual} agotado. Reenrutando energía...")
+                continue 
+            else:
+                # Si es un error diferente (ej. se cortó el internet), abortamos
+                return f"🚨 Error crítico en el enlace neuronal: {str(e)}"
+
+    # Si terminamos el bucle y nada funcionó:
+    return "🚨 Comandante, todos los reactores auxiliares están agotados. Sistema en espera de recarga."
     
-
-    # --- PASO 3: LLAMADA A LA API ---
-    try:
-        res = client.chat.completions.create(
-            messages=mensajes_api,
-            model="llama-3.3-70b-versatile"
-        )
-        return res.choices[0].message.content
-
-    except Exception as e:
-        return f"Error en el enlace neuronal: {str(e)}"
-
 def transcribir_audio(audio_bytes):
     try:
         transcription = client.audio.transcriptions.create(
