@@ -2,6 +2,7 @@
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 import herramientas
+import extra_streamlit_components as stx
 
 # Módulos Stark
 from config import CSS_STARK
@@ -11,6 +12,7 @@ import vision # <--- NUEVO MÓDULO
 import re
 import youtube
 import memoria
+
 
 if "sistemas_activados" not in st.session_state:
     st.session_state.sistemas_activados = False
@@ -44,25 +46,42 @@ st.markdown("""
 
 audio_placeholder = st.empty()
 
-# --- 3. SISTEMA DE AUTENTICACIÓN STARK ---
+# --- SISTEMA DE RECONOCIMIENTO DE DISPOSITIVO (COOKIES) ---
 def check_password():
+    # Inicializamos el manejador de cookies
+    cookie_manager = stx.CookieManager()
+    
+    # 1. Intentamos leer la "Llave Stark" del navegador
+    token_recuerdo = cookie_manager.get(cookie="stark_access_token")
+
+    # 2. Si la cookie existe y es correcta, saltamos el login
+    if token_recuerdo == st.secrets["PASSWORD_MAESTRO"]:
+        st.session_state["password_correct"] = True
+        return True
+
     def password_entered():
         if st.session_state["password"] == st.secrets["PASSWORD_MAESTRO"]:
             st.session_state["password_correct"] = True
-            st.session_state["ejecutar_saludo"] = True  # Gatillo para el saludo
-            del st.session_state["password"] 
+            st.session_state["ejecutar_saludo"] = True
+            
+            # 🍪 GUARDAMOS LA LLAVE: Esto hará que te reconozca la próxima vez
+            # Se guarda por 30 días (ajustable)
+            cookie_manager.set("stark_access_token", st.secrets["PASSWORD_MAESTRO"], expires_at=None)
+            
+            del st.session_state["password"]
         else:
             st.session_state["password_correct"] = False
 
     if st.session_state.get("password_correct"):
         return True
 
-    # Interfaz de Login (Lo único que se ve si no hay acceso)
-   
-    st.text_input("Código de Acceso Stark:", type="password", on_change=password_entered, key="password")
+    # Interfaz de Login (Si no hay cookie o es la primera vez)
+    st.markdown('<div class="orb"></div>', unsafe_allow_html=True)
+    st.text_input("Identificación Requerida:", type="password", on_change=password_entered, key="password")
+    
     if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-        st.error("Código incorrecto. Protocolo de defensa activo.")
-    st.stop() 
+        st.error("Acceso denegado. Perfil no reconocido.")
+    st.stop()
 
 # Ejecutar el bloqueo
 check_password()
