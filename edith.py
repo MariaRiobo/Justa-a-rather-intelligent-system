@@ -124,16 +124,6 @@ with st.expander("Subir archivos"):
 audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True)
 texto_manual = st.chat_input("Escribe...")
 
-# --- PROCESAMIENTO CENTRAL ---
-with st.container():
-    st.caption("🎙️ Control de Voz:")
-    audio_data = mic_recorder(
-        start_prompt="HABLAR AHORA", 
-        stop_prompt="ESCUCHANDO...", 
-        key='mic_pc_forzado', 
-        just_once=True
-    )
-texto_manual = st.chat_input("Escribe...")
 # El sistema se activa si hablaste/escribiste, o si simplemente tomaste una foto
 if user_text or imagen_actual:
     try:
