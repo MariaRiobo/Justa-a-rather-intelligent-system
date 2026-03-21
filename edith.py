@@ -93,30 +93,30 @@ if st.session_state.ejecutar_saludo:
         # Hacemos que la IA genere el texto en vivo
         mensaje_bienvenida = cerebro.pensar_respuesta(prompt_oculto, [], "")
         
-   try:
-        # Limpiamos los asteriscos para que la voz fluya perfecta
-        texto_limpio = mensaje_bienvenida.replace("*", "").replace("#", "").replace("_", "")
-        
-        audio_b64 = voz.generar_audio(texto_limpio)
-        st.session_state.audio_key += 1
-        
-        # 1. Creamos el reproductor oculto igual que en el chat normal
-        audio_html = f"""
-            <audio autoplay key="saludo_{st.session_state.audio_key}">
-                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-            </audio>
-        """
-        # 2. Lo inyectamos en el canal de audio oficial (audio_placeholder)
-        audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
-        
-        # Lo guardamos en el chat visual
-        st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
-        st.session_state.sistemas_activados = True
-        st.session_state.ejecutar_saludo = False 
-    except Exception as e:
-        st.error(f"Fallo en el protocolo matutino: {e}")
-        
-        
+       try:
+            # Limpiamos los asteriscos para que la voz fluya perfecta
+            texto_limpio = mensaje_bienvenida.replace("*", "").replace("#", "").replace("_", "")
+            
+            audio_b64 = voz.generar_audio(texto_limpio)
+            st.session_state.audio_key += 1
+            
+            # 1. Creamos el reproductor oculto igual que en el chat normal
+            audio_html = f"""
+                <audio autoplay key="saludo_{st.session_state.audio_key}">
+                    <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                </audio>
+            """
+            # 2. Lo inyectamos en el canal de audio oficial (audio_placeholder)
+            audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
+            
+            # Lo guardamos en el chat visual
+            st.session_state.chat_history.append({"autor": "EDITH", "msg": mensaje_bienvenida})
+            st.session_state.sistemas_activados = True
+            st.session_state.ejecutar_saludo = False 
+        except Exception as e:
+            st.error(f"Fallo en el protocolo matutino: {e}")
+            
+            
 
 
 
