@@ -37,6 +37,8 @@ if "password_correct" not in st.session_state:
 # --- 5. CONFIGURACIÓN UI Y ELEMENTOS VISUALES ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
 st.markdown(CSS_STARK, unsafe_allow_html=True)
+# Altavoz de EDITH (Posición fija)
+placeholder_audio = st.empty()
 
 # 👇 ESTA ES LA ÚNICA VEZ QUE DIBUJAMOS EL ORBE Y EL TÍTULO 👇
 st.markdown("""
@@ -206,47 +208,58 @@ if user_text or imagen_actual:
                 st.code(borrador_final, language=None, wrap_lines=True)
                 st.info("Copia usando el icono de arriba a la derecha.")
 
-# C. PROTOCOLO DE VOZ (Versión Auto-Limpiante)
+# --- 3. INTERFAZ DE SALIDA - PROTOCOLO FINAL ---
+        if respuesta:
+            # A. GUARDADO DE SEGURIDAD
+            # Verificamos que no sea el mismo mensaje para no duplicar en el historial
+            if not st.session_state.chat_history or st.session_state.chat_history[-1]["msg"] != respuesta:
+                st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
+                st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+                memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
+
+            # B. MODO REDACCIÓN (Si aplica)
+            if es_redaccion:
+                with st.spinner("Limpiando borrador..."):
+                    p_limpieza = f"Responde SOLO el mensaje para enviar, sin etiquetas. Texto: {respuesta}"
+                    borrador_final = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
+                st.subheader("📋 Borrador Táctico")
+                st.code(borrador_final, language=None, wrap_lines=True)
+
+            # C. PROTOCOLO DE VOZ (Inyección Directa y Forzada)
             if len(respuesta) < 900:
-                # Limpiamos prefijos para que no sea redundante al hablar
+                # Limpieza de texto para la voz
                 t_voz = respuesta.replace("EDITH:", "").replace("Francis:", "")
                 t_voz = t_voz.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 
                 try:
                     import time
                     audio_b64 = voz.generar_audio(t_voz.strip())
-                    id_aud = int(time.time() * 1000)
+                    # Generamos un ID único por mensaje
+                    id_msg = int(time.time() * 1000)
                     
-                    # Usamos un placeholder dedicado para que Streamlit SOBREESCRIBA el audio anterior
-                    # en lugar de acumularlos en la página.
-                    if "audio_placeholder" not in st.session_state:
-                        st.session_state.audio_placeholder = st.empty()
-                    
+                    # HTML con JavaScript de reproducción forzada
                     audio_html = f"""
-                        <div id="voicewrap_{id_aud}" style="display:none;">
-                            <audio autoplay="true" id="player_{id_aud}">
+                        <div id="wrapper_{id_msg}" style="display:none;">
+                            <audio id="aud_{id_msg}" autoplay="true" preload="auto">
                                 <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
                             </audio>
                             <script>
-                                // 1. Detener cualquier otro audio que esté sonando
-                                document.querySelectorAll('audio').forEach(el => {{
-                                    if(el.id !== "player_{id_aud}") el.pause();
-                                }});
-                                // 2. Reproducir el nuevo
-                                var audio = document.getElementById("player_{id_aud}");
-                                audio.play().catch(function(e) {{ console.log("Bloqueado"); }});
+                                var player = document.getElementById("aud_{id_msg}");
+                                if (player) {{
+                                    player.play().catch(function(error) {{
+                                        console.log("Audio bloqueado: requiere interacción");
+                                    }});
+                                }}
                             </script>
                         </div>
                     """
-                    # Esto borra el audio del mensaje anterior y pone el nuevo
-                    st.session_state.audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
-                except:
-                    pass
-                    
-            # --- NOTA IMPORTANTE: Quitamos st.rerun() para que el audio no se corte ---
+                    # Enviamos el audio al placeholder que creamos arriba del todo
+                    placeholder_audio.markdown(audio_html, unsafe_allow_html=True)
+                except Exception as e_voz:
+                    st.error(f"Error de audio: {e_voz}")
 
     except Exception as e:
-        st.error(f"Falla crítica: {e}")
+        st.error(f"Error en el sistema: {e}")
         
         
         
