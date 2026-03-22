@@ -1,4 +1,4 @@
-# app.py funcionaaaaa
+# app.py funcionaaaaaa
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 import herramientas
