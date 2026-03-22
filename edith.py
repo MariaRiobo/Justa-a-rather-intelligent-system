@@ -252,18 +252,28 @@ if user_text or imagen_actual:
                         T-MINUS: <span id="timer_display">{{timeLeft}}</span>s
                     </div>
                     <script>
-                        var timeLeft = {segundos_reales};
-                        var display = document.getElementById('timer_display');
-                        var countdown = setInterval(function() {{
-                            timeLeft--;
-                            display.innerHTML = timeLeft;
-                            if (timeLeft <= 0) {{
-                                clearInterval(countdown);
-                                document.getElementById('cronometro_stark').style.display = 'none';
-                                var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
-                                audio.play();
-                            }}
-                        }}, 1000);
+                            // 1. Guardamos el momento exacto en que DEBE terminar (Hora actual + segundos)
+                            var endTime = Date.now() + ({segundos_reales} * 1000);
+                            var display = document.getElementById('timer_display');
+                            
+                            var countdown = setInterval(function() {
+                                // 2. Calculamos cuánto falta comparando con el reloj real del sistema
+                                var now = Date.now();
+                                var timeLeft = Math.round((endTime - now) / 1000);
+                                
+                                if (timeLeft <= 0) {
+                                    clearInterval(countdown);
+                                    display.innerHTML = "0";
+                                    document.getElementById('cronometro_stark').style.display = 'none';
+                                    
+                                    // 3. Ejecutar audio
+                                    var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
+                                    audio.play();
+                                } else {
+                                    // Actualizamos el número con el tiempo real restante
+                                    display.innerHTML = timeLeft;
+                                }
+                            }, 1000); // Aunque el navegador se ponga lento, al despertar corregirá el número saltando
                     </script>
                 """, height=60)
            
