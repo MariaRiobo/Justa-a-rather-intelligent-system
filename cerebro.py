@@ -51,7 +51,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 # IMPORTANTE: El formato [TIMER:X] debe ir al inicio para que edith.py lo detecte
                 return f"[TIMER:{segundos}] Entendido. Alarma configurada para las {confirmacion}."
             else:
-                return "jEFA, NO PUDE HACERLO
+                return "jEFA, NO PUDE HACERLO"
 
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
