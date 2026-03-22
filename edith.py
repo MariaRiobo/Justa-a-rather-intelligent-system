@@ -209,7 +209,7 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-                                               # C. PROTOCOLO DE VOZ (Nativo Oculto + Toque Fantasma iOS)
+       # C. PROTOCOLO DE VOZ (Estabilizado con Components)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
@@ -217,48 +217,27 @@ if user_text or imagen_actual:
                     audio_b64 = voz.generar_audio(t_voz)
                     id_unico = int(time.time() * 1000)
                     
-                    # 1. Reproductor nativo de Streamlit (soluciona el bug del segundo mensaje)
-                    # 2. CSS para hacerlo invisible (sin botones)
-                    # 3. JavaScript que captura tu toque en pantalla si Apple bloquea el autoplay por demora
-                    st.markdown(
-                        f"""
-                        <style>
-                            /* Ocultamos todos los reproductores de audio de la interfaz */
-                            audio {{ display: none !important; }}
-                        </style>
-                        <audio id="edith_voice_{id_unico}" autoplay>
-                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                        </audio>
-                        <script>
-                            var audioEl = document.getElementById("edith_voice_{id_unico}");
-                            if (audioEl) {{
-                                var playPromise = audioEl.play();
-                                if (playPromise !== undefined) {{
-                                    playPromise.catch(function(error) {{
-                                        // Si Apple bloquea por la demora de procesamiento:
-                                        var ghostTouch = function() {{
-                                            audioEl.play();
-                                            document.removeEventListener('touchstart', ghostTouch);
-                                            document.removeEventListener('click', ghostTouch);
-                                        }};
-                                        // Al tocar para hacer scroll, EDITH hablará
-                                        document.addEventListener('touchstart', ghostTouch, {{once: true}});
-                                        document.addEventListener('click', ghostTouch, {{once: true}});
-                                    }});
-                                }}
-                            }}
-                        </script>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                    audio_html = f"""
+                        <div style="display:none;">
+                            <audio autoplay="true" id="audio_{id_unico}">
+                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                            </audio>
+                            <script>
+                                var a = document.getElementById("audio_{id_unico}");
+                                if(a) a.play().catch(function(e){{console.log("Audio bloqueado");}});
+                            </script>
+                        </div>
+                    """
+                    # Inyectamos el audio como un componente independiente, igual que en el saludo inicial
+                    st.components.v1.html(audio_html, height=0)
+                    
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
-
-
-
-    # Este es el bloque de cierre que causaba el fallo crítico. Ahora está alineado.
     except Exception as e:
         st.error(f"Error en el sistema: {e}")
+        
+        
+
 
 # --- MOSTRAR CHAT ---
 for item in reversed(st.session_state.chat_history):
