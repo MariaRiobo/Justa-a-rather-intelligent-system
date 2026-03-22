@@ -5,7 +5,7 @@ import herramientas
 import youtube
 import temporizador
 
-# Configuración del cliente Groq
+# Configuración del cliente Groq: funciona
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def pensar_respuesta(texto_usuario, historial, texto_documento=""):
