@@ -34,36 +34,48 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             datos_extra = herramientas.buscar_en_internet(texto_usuario)
             
   # PRIORIDAD 5: Temporizador Táctico
+  
     elif any(w in texto_min for w in ["alarma", "temporizador", "avísame", "avisame", "timer"]):
         import re
-        from datetime import datetime, timedelta
+        from datetime import datetime
         import pytz
         
-        # 1. Obtenemos la hora real de Argentina
+        # 1. FORZAMOS la hora actual de Argentina para que la IA sepa dónde está parada
         zona = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(zona)
-        ahora_str = ahora.strftime("%H:%M")
+        hora_actual_formato = ahora.strftime("%H:%M:%S") # Incluimos segundos para precisión
         
-        # 2. Le pedimos a la IA que calcule la DIFERENCIA
-        prompt_t = f"HORA ACTUAL: {ahora_str}. Usuario pide alarma para: '{texto_usuario}'. ¿Cuántos SEGUNDOS faltan exactamente desde ahora? Responde solo el número entre corchetes. Ejemplo: [300]"
+        # 2. Le pasamos la HORA ACTUAL como una orden absoluta
+        prompt_t = f"""
+        SISTEMA DE TIEMPO STARK.
+        HORA ACTUAL: {hora_actual_formato}
+        SOLICITUD: "{texto_usuario}"
+        
+        TAREA: Calcula cuántos segundos faltan desde la HORA ACTUAL hasta la hora pedida.
+        - Si piden "a las 17:45" y son las 17:43:00, faltan 120 segundos.
+        - Responde SOLO el número entre corchetes. Ejemplo: [120]
+        """
         
         try:
             res_t = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt_t}],
                 model="llama-3.1-8b-instant",
-                temperature=0
+                temperature=0 # Temperatura 0 para que no invente números
             )
-            match = re.search(r"\[(\d+)\]", res_t.choices[0].message.content)
+            resultado_ia = res_t.choices[0].message.content
+            match = re.search(r"\[(\d+)\]", resultado_ia)
             segundos = int(match.group(1)) if match else 0
             
             if segundos > 0:
-                hora_final = (ahora + timedelta(seconds=segundos)).strftime("%H:%M")
-                return f"[TIMER:{segundos}] Configurado. Te avisaré a las {hora_final}, Francis."
+                # Extraemos la hora que pidió el usuario para confirmársela
+                hora_pedida = re.search(r"(\d{1,2}:\d{2})", texto_usuario)
+                confirmacion = hora_pedida.group(1) if hora_pedida else "la hora solicitada"
+                
+                return f"[TIMER:{segundos}] Entendido. Alarma configurada para las {confirmacion}."
             else:
-                return "No puedo poner una alarma en el pasado, Jefa."
+                return "Jefa, esa hora ya pasó o el cálculo falló. Intente decir 'en 5 minutos'."
         except:
-            return "Error en el sensor cronométrico."
-
+            return "Error en la sincronización del cronómetro."
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
     
