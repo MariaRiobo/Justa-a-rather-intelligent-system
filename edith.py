@@ -247,35 +247,34 @@ if user_text or imagen_actual:
                 aviso_final = "Atención Francis, el tiempo ha expirado."
                 audio_aviso_b64 = voz.generar_audio(aviso_final)
                 
-                st.components.v1.html(f"""
-                    <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
-                        T-MINUS: <span id="timer_display">{{timeLeft}}</span>s
-                    </div>
-                    <script>
-                            // 1. Guardamos el momento exacto en que DEBE terminar (Hora actual + segundos)
-                            var endTime = Date.now() + ({segundos_reales} * 1000);
-                            var display = document.getElementById('timer_display');
+               # --- INYECTAMOS EL JS CON RELOJ SINCRONIZADO AL TIEMPO REAL ---
+            st.components.v1.html(f"""
+                <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
+                    T-MINUS: <span id="timer_display">{segundos_reales}</span>s
+                </div>
+                <script>
+                    // 1. Hora de finalización calculada una sola vez
+                    var endTime = Date.now() + ({segundos_reales} * 1000);
+                    var display = document.getElementById('timer_display');
+                    
+                    var countdown = setInterval(function() {{
+                        // Usamos doble llave {{ }} para que Python las ignore
+                        var now = Date.now();
+                        var timeLeft = Math.round((endTime - now) / 1000);
+                        
+                        if (timeLeft <= 0) {{
+                            clearInterval(countdown);
+                            display.innerHTML = "0";
+                            document.getElementById('cronometro_stark').style.display = 'none';
                             
-                            var countdown = setInterval(function() {
-                                // 2. Calculamos cuánto falta comparando con el reloj real del sistema
-                                var now = Date.now();
-                                var timeLeft = Math.round((endTime - now) / 1000);
-                                
-                                if (timeLeft <= 0) {
-                                    clearInterval(countdown);
-                                    display.innerHTML = "0";
-                                    document.getElementById('cronometro_stark').style.display = 'none';
-                                    
-                                    // 3. Ejecutar audio
-                                    var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
-                                    audio.play();
-                                } else {
-                                    // Actualizamos el número con el tiempo real restante
-                                    display.innerHTML = timeLeft;
-                                }
-                            }, 1000); // Aunque el navegador se ponga lento, al despertar corregirá el número saltando
-                    </script>
-                """, height=60)
+                            var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
+                            audio.play();
+                        }} else {{
+                            display.innerHTML = timeLeft;
+                        }}
+                    }}, 1000);
+                </script>
+            """, height=60)
            
                 
       
