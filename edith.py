@@ -189,6 +189,7 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
    # --- 3. INTERFAZ DE SALIDA ---
+
         if respuesta:
             if es_redaccion:
                 with st.spinner("E.D.I.T.H. está preparando la pluma..."):
@@ -197,7 +198,8 @@ if user_text or imagen_actual:
                     REGLA DE ORO: Devuelve ÚNICAMENTE el texto del mensaje, sin introducciones, sin comillas, y sin nombres de usuario. 
                     Estilo Stark.
                     """
-                    respuesta = cerebro.think_response(instruccion, st.session_state.chat_history, "")
+                    # CORRECCIÓN AQUÍ: pensar_respuesta en lugar de think_response
+                    respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
                     respuesta_limpia = respuesta.strip().strip('"').strip("'")
                     
                     st.subheader("📋 Borrador Táctico")
@@ -222,6 +224,7 @@ if user_text or imagen_actual:
                         </script>
                     """
                     st.components.v1.html(boton_copy_html, height=80)
+                    
 
             # --- ESTAS LÍNEAS DEBEN ESTAR ALINEADAS CON EL 'if es_redaccion' ---
             st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
