@@ -189,6 +189,7 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
 # --- 3. INTERFAZ DE SALIDA ---
+       
         if respuesta:
             if es_redaccion:
                 with st.spinner("E.D.I.T.H. está preparando la pluma..."):
@@ -196,21 +197,31 @@ if user_text or imagen_actual:
                     respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
                     respuesta_limpia = respuesta.strip().strip('"').strip("'")
                     
-               
-                    # El text_area permite el "wrap" (que el texto vaya hacia abajo)
-                    st.text_area("Mensaje listo:", value=respuesta_limpia, height=150, key="copy_area")
+                 
                     
-                    # Botón Celeste Stark con funcionalidad de copia mejorada
-                    import json
-                    safe_text = json.dumps(respuesta_limpia)
-                    boton_html = f"""
-                        <button onclick="navigator.clipboard.writeText({safe_text})" style="background:#00BFFF;color:white;border:none;padding:15px;border-radius:10px;width:100%;cursor:pointer;font-weight:bold;">
-                            COPIAR AL PORTAPAPELES
-                        </button>
-                    """
-                    st.components.v1.html(boton_html, height=70)
+                    # 1. El text_area permite el "wrap" automático (el texto va hacia abajo)
+                    # Nota: El usuario puede copiar directamente desde aquí con el icono nativo
+                    st.text_area("Mensaje para copiar:", value=respuesta_limpia, height=150, key="copy_area_final")
+                    
+                    # 2. Botón Celeste Stark Estético
+                    st.markdown("""
+                        <style>
+                        div.stButton > button:first-child {
+                            background-color: #00BFFF !important;
+                            color: white !important;
+                            border-radius: 10px;
+                            width: 100%;
+                            height: 50px;
+                            font-weight: bold;
+                            border: none;
+                        }
+                        </style>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button("LISTO PARA ENVIAR"):
+                        st.success("Copia el texto del recuadro superior y pégalo en tu app.")
 
-            # ESTAS LÍNEAS DEBEN ESTAR AL MISMO NIVEL QUE EL 'if es_redaccion'
+            # --- ALINEACIÓN DE SEGURIDAD (4 espacios) ---
             st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
             st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
             
@@ -227,6 +238,7 @@ if user_text or imagen_actual:
 
     except Exception as e:
         st.error(f"Falla crítica: {e}")
+        
         
 
 # --- MOSTRAR CHAT ---
