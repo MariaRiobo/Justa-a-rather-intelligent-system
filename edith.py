@@ -252,18 +252,22 @@ if user_text or imagen_actual:
                     """
                     st.components.v1.html(boton_copy_html, height=80)
             
-            # Guardar en Historial y Memoria
+           # 1. Guardamos en historial una sola vez
+            # Revisa que esta línea tenga los mismos espacios que el 'if es_redaccion' de arriba
             st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
             st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+            
+            # 2. Guardamos en memoria persistente
             memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # Audio
+            # 3. Protocolo de Voz
             if len(respuesta) < 500:
-                t_voz = respuesta.replace("*","").replace("#","")
+                t_voz = respuesta.replace("*","").replace("#","").replace("_","")
                 audio_b64 = voz.generar_audio(t_voz)
                 audio_html = f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>'
                 audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
 
+            # 4. Rerun condicional
             if not es_redaccion:
                 st.rerun()
 
