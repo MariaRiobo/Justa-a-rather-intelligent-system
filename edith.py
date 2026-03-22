@@ -188,44 +188,43 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-# --- 3. INTERFAZ DE SALIDA - PROTOCOLO DE VOZ ---
+# --- 3. INTERFAZ DE SALIDA - PROTOCOLO STARK ---
         if respuesta:
-            # 1. GUARDADO (Primero lo primero)
-            st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
-            st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+            # 1. GUARDADO SILENCIOSO
+            if "chat_history" in st.session_state:
+                st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
+                st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
             memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # 2. PROTOCOLO DE VOZ (Limpio y directo)
+            # 2. PROCESAMIENTO VISUAL (Solo si es redacción)
+            if es_redaccion:
+                with st.spinner("Limpiando borrador..."):
+                    # RE-PROCESAMOS EL PROMPT PARA QUE SEA SOLO TEXTO
+                    prompt_limpieza = f"ESTRICTO: Reescribe esto para que sea UN SOLO PÁRRAFO de texto natural. Elimina 'Borrador:', 'Firma:', 'Mensaje para:', asteriscos y negritas. Solo el contenido para enviar: {respuesta}"
+                    borrador_final = cerebro.pensar_respuesta(prompt_limpieza, [], "")
+                    borrador_final = borrador_final.strip().strip('"').replace("**", "")
+
+                st.subheader("📋 Borrador Táctico")
+                # El componente 'st.code' es el que tiene el botón de copiar que sí funciona
+                st.code(borrador_final, language=None, wrap_lines=True)
+                st.info("👆 Usa el icono de arriba a la derecha para copiar.")
+
+            # 3. PROTOCOLO DE VOZ (Universal)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
-                    # HTML simple pero efectivo. El 'key' dinámico fuerza al navegador a notar un cambio.
                     import time
-                    audio_id = int(time.time())
-                    audio_html = f"""
-                        <audio autoplay="true" key="{audio_id}">
-                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                        </audio>
-                    """
+                    audio_html = f'<audio autoplay="true" key="{int(time.time())}"><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>'
                     st.markdown(audio_html, unsafe_allow_html=True)
-                except Exception as e_audio:
-                    st.warning("Señor, el módulo de voz no responde.")
+                except:
+                    pass
 
-            # 3. INTERFAZ VISUAL
-            if es_redaccion:
-                st.subheader("📋 Borrador Táctico")
-                st.code(respuesta.strip().strip('"'), language=None, wrap_lines=True)
-                st.info("👆 Copia usando el icono superior derecho.")
-                # No hacemos rerun para que el audio suene y el texto no parpadee
-            else:
-                # Si es charla normal, esperamos un segundo antes de refrescar para que el audio arranque
+            # 4. CONTROL DE FLUJO
+            if not es_redaccion:
                 import time
-                time.sleep(1.2) # Un poco más de tiempo para asegurar la carga
+                time.sleep(1.2) # Tiempo para que el audio cargue antes del refresco
                 st.rerun()
-
-    except Exception as e:
-        st.error(f"Falla crítica en el núcleo: {e}")
 
         
 # --- MOSTRAR CHAT ---
