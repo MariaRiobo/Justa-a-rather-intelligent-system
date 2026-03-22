@@ -71,7 +71,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 hora_pedida = re.search(r"(\d{1,2}:\d{2})", texto_usuario)
                 confirmacion = hora_pedida.group(1) if hora_pedida else "la hora solicitada"
                 
-                return f"[TIMER:{segundos}] Entendido. Alarma configurada para las {confirmacion}."
+                return f"[TIMER:{segundos}] Entendido. Alarma configurada para {confirmacion}."
             else:
                 return "Jefa, esa hora ya pasó o el cálculo falló. Intente decir 'en 5 minutos'."
         except:
