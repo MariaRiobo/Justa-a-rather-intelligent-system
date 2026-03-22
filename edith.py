@@ -207,19 +207,25 @@ if user_text or imagen_actual:
                 st.code(borrador_final, language=None, wrap_lines=True)
                 st.info("Usa el icono de arriba a la derecha para copiar.")
 
-            # C. PROTOCOLO DE VOZ (Sin interrupciones de refresco)
+            # C. PROTOCOLO DE VOZ (Con ID dinámico para evitar bloqueos)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
+                    import time
                     audio_b64 = voz.generar_audio(t_voz)
+                    # El 'key' y el ID único obligan al navegador a tratarlo como un archivo nuevo
+                    id_transmision = int(time.time())
                     audio_html = f"""
-                        <audio autoplay="true">
-                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                        </audio>
+                        <div id="stark_audio_{id_transmision}">
+                            <audio autoplay="true" cache="none">
+                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                            </audio>
+                        </div>
                     """
                     st.markdown(audio_html, unsafe_allow_html=True)
-                except:
-                    pass
+                except Exception as e_voz:
+                    st.error(f"Error en comunicación de voz: {e_voz}")
+                    
 
             # NOTA: Hemos eliminado st.rerun() y time.sleep(). 
             # Esto evita el titileo y permite que el audio suene completo.
