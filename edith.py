@@ -166,8 +166,8 @@ if user_text or imagen_actual:
             # ¿Es redacción?
                # Detección inteligente del modo redacción
             palabras_clave_redaccion = ["redact", "escrib", "mensaje", "correo", "mail", "borrador", "modifica", "cambia", "otra versión", "más formal", "hazlo"]
-            es_redaccion = any(palabra in user_text.lower() for palabra en palabras_clave_redaccion)
-            
+            es_redaccion = any(palabra in user_text.lower() for palabra in palabras_clave_redaccion)
+                
             # ¿Es YouTube?
             match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
             if match_yt:
