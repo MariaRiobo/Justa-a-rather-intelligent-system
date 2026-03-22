@@ -141,21 +141,28 @@ with st.expander("Subir archivos"):
     texto_documento = ""
     
     if archivo_subido is not None:
-        # 1. Si es un archivo nuevo que no hemos guardado, lo extraemos y lo metemos en memoria
+        # Si es un archivo nuevo, lo leemos
         if "archivo_actual" not in st.session_state or st.session_state.archivo_actual != archivo_subido.name:
-            # Forzamos al sistema a leer el archivo desde el principio (vital para PDFs)
             archivo_subido.seek(0) 
-            st.session_state.texto_cache = herramientas.extraer_texto(archivo_subido)
+            texto_extraido = herramientas.extraer_texto(archivo_subido)
+            
+            # EL TRUCO: Le ponemos una etiqueta clara para que EDITH sepa cómo se llama el archivo
+            st.session_state.texto_cache = f"\n\n--- INICIO DEL DOCUMENTO: {archivo_subido.name} ---\n{texto_extraido}\n--- FIN DEL DOCUMENTO ---\n"
             st.session_state.archivo_actual = archivo_subido.name
             
-        # 2. Asignamos el texto desde la memoria para que el procesador lo use
         texto_documento = st.session_state.texto_cache
-        st.success(f"Archivo '{archivo_subido.name}' escaneado y en memoria activa.")
         
+        # Validación de seguridad: ¿Realmente pudimos leer texto?
+        if len(st.session_state.texto_cache) < 150: # Si tiene menos de 150 caracteres (solo nuestras etiquetas)
+            st.warning("⚠️ E.D.I.T.H.: El PDF parece estar vacío o es una imagen escaneada. Mis sensores de texto no detectan letras legibles.")
+        else:
+            st.success(f"Archivo '{archivo_subido.name}' escaneado, etiquetado y en memoria activa.")
+            
     else:
-        # Si quitas el archivo, limpiamos la memoria
+        # Limpieza si cierras el archivo
         st.session_state.texto_cache = ""
         st.session_state.archivo_actual = ""
+        
         
 
 # --- CONTROLES DE ENTRADA (ESTO ES LO QUE FALTABA) ---
