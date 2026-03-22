@@ -3,6 +3,7 @@ from groq import Groq
 from config import SYSTEM_PROMPT
 import herramientas
 import youtube
+import temporizador
 
 # Configuración del cliente Groq
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -22,15 +23,25 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         with st.spinner("Consultando satélites meteorológicos..."):
             datos_extra = herramientas.obtener_clima()
             
-    # PRIORIDAD NUEVA: Reloj del Sistema (¡AQUÍ ESTÁ EL ARREGLO!)
+    # PRIORIDAD 3: Reloj del Sistema (¡AQUÍ ESTÁ EL ARREGLO!)
     elif any(w in texto_min for w in ["hora", "fecha", "día", "dia", "qué hora"]):
         with st.spinner("Sincronizando reloj atómico..."):
             datos_extra = herramientas.obtener_fecha_hora()        
 
-    # PRIORIDAD 3: Rastreo Web General (Boca, noticias, etc.)
+    # PRIORIDAD 4: Rastreo Web General (Boca, noticias, etc.)
     elif any(w in texto_min for w in ["boca", "river", "partido", "resultado", "jugó", "noticias", "precio", "quien es", "quién es"]):
         with st.spinner("E.D.I.T.H. rastreando la red..."):
             datos_extra = herramientas.buscar_en_internet(texto_usuario)
+            
+    # PRIORIDAD 5: Temporizador Táctico
+    elif any(w in texto_min for w in ["alarma", "temporizador", "avísame", "avisame", "timer"]):
+        with st.spinner("Configurando reloj de cuenta regresiva..."):
+            segundos = temporizador.extraer_segundos(texto_usuario)
+            if segundos > 0:
+                # Devolvemos un comando oculto [TIMER:X] que edith.py leerá en secreto
+                return f"[TIMER:{segundos}] Comandante, he configurado el temporizador táctico para {segundos} segundos. El sistema le avisará por voz automáticamente."
+            else:
+                return "Comandante, no pude identificar la cantidad de tiempo. Por favor, especifique los minutos o segundos exactos."
 
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
