@@ -12,6 +12,7 @@ import vision # <--- NUEVO MÓDULO
 import re
 import youtube
 import memoria
+import notificaciones
 
 
 if "sistemas_activados" not in st.session_state:
@@ -215,18 +216,26 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
         #ALARMA
-    # --- ALARMA NIVEL STARK (VISUAL + VOZ) ---
+   
         match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
         
         if match_timer:
             segundos_reales = int(match_timer.group(1))
             respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
             
-            # Preparamos el aviso de voz
+            # 1. ENVIAR NOTIFICACIÓN AL IPHONE (Vía Pushover)
+            # Esto llega apenas configurás la alarma
+            import notificaciones
+            notificaciones.enviar_pushover(
+                mensaje=f"Temporizador iniciado. Te avisaré en {segundos_reales} segundos.",
+                titulo="E.D.I.T.H. Cronos"
+            )
+            
+            # 2. PREPARAMOS EL AVISO DE VOZ PARA LA PC
             aviso_final = "Atención Francis, el tiempo ha expirado."
             audio_aviso_b64 = voz.generar_audio(aviso_final)
             
-            # Inyectamos el JS con Reloj Visual
+            # 3. INYECTAMOS EL JS CON RELOJ VISUAL Y VOZ FINAL
             st.components.v1.html(f"""
                 <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
                     T-MINUS: <span id="timer_display">{segundos_reales}</span>s
@@ -241,13 +250,14 @@ if user_text or imagen_actual:
                         if (timeLeft <= 0) {{
                             clearInterval(countdown);
                             document.getElementById('cronometro_stark').style.display = 'none';
+                            
+                            // Reproduce la voz de EDITH en la PC
                             var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
                             audio.play();
                         }}
                     }}, 1000);
                 </script>
             """, height=60)
-
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
             # A. GUARDADO (Historial Limpio)
