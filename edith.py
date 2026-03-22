@@ -217,30 +217,33 @@ if user_text or imagen_actual:
 
             #ALARMA
         
-                match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
+            match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
+            
+            if match_timer:
+                segundos_reales = int(match_timer.group(1))
+                respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
                 
-               if match_timer:
-                    segundos_reales = int(match_timer.group(1))
-                    respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
-                
-                # --- 1. DEFINIR LA FUNCIÓN CON ARGUMENTO ---
-                # Le agregamos (segundos) para que la función RECIBA el dato
+                # 1. Definimos la función de aviso (Dentro del IF)
                 def aviso_final_iphone(segundos):
                     import time
-                    # Ahora usamos 'segundos' en vez de 'segundos_reales'
+                    # Ajuste de 3 segundos para precisión total
                     tiempo_ajustado = max(0, segundos - 3) 
                     time.sleep(tiempo_ajustado)
-                    
                     notificaciones.enviar_pushover(
                         mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
                         titulo="ALERTA CRÍTICA",
                         sonido="siren"
                     )
     
-                # --- 2. LANZAR EL HILO PASANDO EL DATO ---
-                # Usamos 'args' para enviarle los segundos_reales a la función
+                # 2. Lanzamos el hilo (Dentro del IF)
                 import threading
                 threading.Thread(target=aviso_final_iphone, args=(segundos_reales,)).start()
+    
+                # 3. Notificación de inicio inmediata
+                notificaciones.enviar_pushover(
+                    mensaje=f"Temporizador de {segundos_reales}s iniciado.",
+                    sonido="bike"
+                )
 
         
                 # 3. VOZ Y RELOJ (PC)
