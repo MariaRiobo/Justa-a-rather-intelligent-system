@@ -142,7 +142,7 @@ with st.expander("Subir archivos"):
         st.success(f"Archivo '{archivo_subido.name}' escaneado.")
 
 # --- CONTROLES DE ENTRADA (ESTO ES LO QUE FALTABA) ---
-audio_data = mic_recorder(start_prompt="🎙️ HABLAR", stop_prompt="🛑 ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
+audio_data = mic_recorder(start_prompt="HABLAR", stop_prompt=" ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
 texto_manual = st.chat_input("Escribe un comando o pega un link de YouTube...")
 
 # --- PROCESAMIENTO CENTRAL UNIFICADO ---
@@ -168,7 +168,7 @@ if user_text or imagen_actual:
             # ¿Es YouTube?
             match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
             if match_yt:
-                st.info("📹 Enlace detectado. Analizando video...")
+                st.info("Enlace detectado. Analizando video...")
                 transcripcion = youtube.obtener_transcripcion(match_yt.group(1))
                 if transcripcion.startswith("ERROR"):
                     st.error("No pude acceder al guion del video.")
@@ -191,7 +191,7 @@ if user_text or imagen_actual:
         # 3. INTERFAZ DE SALIDA
         if respuesta:
             if es_redaccion:
-                st.subheader("📋 Borrador Táctico")
+                st.info("Borrador")
                 st.info(respuesta)
                 boton_copy = f"""<button onclick="navigator.clipboard.writeText(`{respuesta.replace('`','')} `)" style="background:#FF4B4B;color:white;border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold;">⚡ COPIAR AL PORTAPAPELES</button>"""
                 st.components.v1.html(boton_copy, height=70)
