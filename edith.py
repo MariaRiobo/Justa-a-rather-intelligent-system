@@ -215,17 +215,15 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
         #ALARMA
-
-        # 1. Detectamos si la respuesta trae un TIMER
-        respuesta_edith = cerebro.pensar_respuesta(prompt, st.session_state.chat_history)
-        match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta_edith)
+        # Usamos 'respuesta' que es la variable que ya definió el cerebro arriba
+        match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
         
         if match_timer:
             segundos_falsos = int(match_timer.group(1))
-            # Limpiamos el texto para que no se vea el código feo [TIMER:123]
-            respuesta_limpia = re.sub(r"\[TIMER:\d+\]", "", respuesta_edith).strip()
+            # Limpiamos el código [TIMER:XXX] de la respuesta principal
+            respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
             
-            # Inyectamos un componente invisible que espera los segundos y hace sonar la alarma
+            # Inyectamos el componente de audio y alerta
             st.components.v1.html(f"""
                 <script>
                     setTimeout(function() {{
@@ -234,11 +232,7 @@ if user_text or imagen_actual:
                         alert("¡JEFA, EL TIEMPO HA EXPIRADO!");
                     }}, {segundos_falsos * 1000});
                 </script>
-            """, height=0)
-            
-            st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta_limpia})
-        else:
-            st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta_edith})
+            """, height=0)})
 
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
