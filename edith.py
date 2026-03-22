@@ -139,9 +139,24 @@ with st.expander("Activar Sensores Ópticos"):
 with st.expander("Subir archivos"):
     archivo_subido = st.file_uploader("Subir documento (PDF o TXT)", type=['txt', 'pdf'])
     texto_documento = ""
+    
     if archivo_subido is not None:
-        texto_documento = herramientas.extraer_texto(archivo_subido)
-        st.success(f"Archivo '{archivo_subido.name}' escaneado.")
+        # 1. Si es un archivo nuevo que no hemos guardado, lo extraemos y lo metemos en memoria
+        if "archivo_actual" not in st.session_state or st.session_state.archivo_actual != archivo_subido.name:
+            # Forzamos al sistema a leer el archivo desde el principio (vital para PDFs)
+            archivo_subido.seek(0) 
+            st.session_state.texto_cache = herramientas.extraer_texto(archivo_subido)
+            st.session_state.archivo_actual = archivo_subido.name
+            
+        # 2. Asignamos el texto desde la memoria para que el procesador lo use
+        texto_documento = st.session_state.texto_cache
+        st.success(f"Archivo '{archivo_subido.name}' escaneado y en memoria activa.")
+        
+    else:
+        # Si quitas el archivo, limpiamos la memoria
+        st.session_state.texto_cache = ""
+        st.session_state.archivo_actual = ""
+        
 
 # --- CONTROLES DE ENTRADA (ESTO ES LO QUE FALTABA) ---
 audio_data = mic_recorder(start_prompt="HABLAR", stop_prompt=" ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
