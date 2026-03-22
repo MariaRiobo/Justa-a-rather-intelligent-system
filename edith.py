@@ -215,15 +215,14 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-            #ALARMA
-        
+           # --- ALARMA NIVEL STARK ---
             match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
             
             if match_timer:
                 segundos_reales = int(match_timer.group(1))
                 respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
                 
-                # 1. Definimos la función de aviso (Dentro del IF)
+                # 1. Definimos la función de aviso
                 def aviso_final_iphone(segundos):
                     import time
                     # Ajuste de 3 segundos para precisión total
@@ -235,7 +234,7 @@ if user_text or imagen_actual:
                         sonido="siren"
                     )
     
-                # 2. Lanzamos el hilo (Dentro del IF)
+                # 2. Lanzamos el hilo
                 import threading
                 threading.Thread(target=aviso_final_iphone, args=(segundos_reales,)).start()
     
@@ -244,41 +243,39 @@ if user_text or imagen_actual:
                     mensaje=f"Temporizador de {segundos_reales}s iniciado.",
                     sonido="bike"
                 )
-
         
-                # 3. VOZ Y RELOJ (PC)
+                # 4. VOZ Y RELOJ (PC)
                 aviso_final = "Atención Francis, el tiempo ha expirado."
                 audio_aviso_b64 = voz.generar_audio(aviso_final)
                 
-               # --- INYECTAMOS EL JS CON RELOJ SINCRONIZADO AL TIEMPO REAL ---
-            st.components.v1.html(f"""
-                <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
-                    T-MINUS: <span id="timer_display">{segundos_reales}</span>s
-                </div>
-                <script>
-                    // Ajustamos el tiempo final restando los 3 segundos de "arranque"
-                    var compensacion = 3;
-                    var endTime = Date.now() + (({segundos_reales} - compensacion) * 1000);
-                    var display = document.getElementById('timer_display');
-                    
-                    var countdown = setInterval(function() {{
-                        var now = Date.now();
-                        var timeLeft = Math.round((endTime - now) / 1000);
+                # ¡ESTE BLOQUE AHORA ESTÁ FIRMEMENTE DENTRO DEL IF!
+                st.components.v1.html(f"""
+                    <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
+                        T-MINUS: <span id="timer_display">{segundos_reales}</span>s
+                    </div>
+                    <script>
+                        // Ajustamos el tiempo final restando los 3 segundos de "arranque"
+                        var compensacion = 3;
+                        var endTime = Date.now() + (({segundos_reales} - compensacion) * 1000);
+                        var display = document.getElementById('timer_display');
                         
-                        if (timeLeft <= 0) {{
-                            clearInterval(countdown);
-                            display.innerHTML = "0";
-                            document.getElementById('cronometro_stark').style.display = 'none';
+                        var countdown = setInterval(function() {{
+                            var now = Date.now();
+                            var timeLeft = Math.round((endTime - now) / 1000);
                             
-                            var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
-                            audio.play();
-                        }} else {{
-                            display.innerHTML = timeLeft;
-                        }}
-                    }}, 1000);
-                </script>
-            """, height=60)
-           
+                            if (timeLeft <= 0) {{
+                                clearInterval(countdown);
+                                display.innerHTML = "0";
+                                document.getElementById('cronometro_stark').style.display = 'none';
+                                
+                                var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
+                                audio.play();
+                            }} else {{
+                                display.innerHTML = timeLeft;
+                            }}
+                        }}, 1000);
+                    </script>
+                """, height=60)
                 
       
            
