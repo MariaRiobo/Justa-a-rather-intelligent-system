@@ -215,7 +215,6 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
         #ALARMA
-        # --- edith.py (Dentro del bloque donde se muestra la respuesta de EDITH) ---
 
         # 1. Detectamos si la respuesta trae un TIMER
         match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta_edith)
