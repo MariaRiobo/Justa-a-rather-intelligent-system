@@ -16,22 +16,18 @@ import base64
 
 # --- 🔊 FUNCIÓN UNIVERSAL DE AUDIO (FIX iPHONE) ---
 def reproducir_audio_base64(audio_b64, key):
-    audio_bytes = base64.b64decode(audio_b64)
+    audio_html = f"""
+        <audio id="audio_{key}" playsinline preload="auto" style="display:none;">
+            <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mpeg">
+        </audio>
 
-    # renderiza audio real (esto sí le gusta a iPhone)
-    st.audio(audio_bytes, format="audio/mpeg")
+        <script>
+        const audio = document.getElementById("audio_{key}");
 
-    # JS para intentar autoplay sobre el audio renderizado
-    autoplay_js = f"""
-    <script>
-    const audios = window.parent.document.querySelectorAll("audio");
-    const audio = audios[audios.length - 1];
-
-    if (audio) {{
-        const playPromise = audio.play();
-
-        if (playPromise !== undefined) {{
-            playPromise.catch(() => {{
+        function intentarPlay() {{
+            if (!audio) return;
+            audio.play().catch(() => {{
+                // fallback iPhone → espera interacción
                 const resume = () => {{
                     audio.play();
                     document.removeEventListener("touchstart", resume);
@@ -41,11 +37,16 @@ def reproducir_audio_base64(audio_b64, key):
                 document.addEventListener("click", resume);
             }});
         }}
-    }}
-    </script>
-    """
-    st.components.v1.html(autoplay_js, height=0)
 
+        // intento inmediato (desktop)
+        intentarPlay();
+
+        // intento extra por si Streamlit tarda en montar
+        setTimeout(intentarPlay, 500);
+        setTimeout(intentarPlay, 1500);
+        </script>
+    """
+    st.components.v1.html(audio_html, height=0)
 
 # --- ESTADOS ---
 if "sistemas_activados" not in st.session_state:
