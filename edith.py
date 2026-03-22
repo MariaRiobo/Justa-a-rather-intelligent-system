@@ -209,7 +209,7 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-       # C. PROTOCOLO DE VOZ (Estabilizado con Components)
+     # C. PROTOCOLO DE VOZ (Estabilizado para PC y iPhone - Sin iframes)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
@@ -218,23 +218,40 @@ if user_text or imagen_actual:
                     id_unico = int(time.time() * 1000)
                     
                     audio_html = f"""
-                        <div style="display:none;">
-                            <audio autoplay="true" id="audio_{id_unico}">
-                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                            </audio>
-                            <script>
+                        <audio id="audio_{id_unico}" playsinline style="display:none;">
+                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                        </audio>
+                        <script>
+                            (function() {{
                                 var a = document.getElementById("audio_{id_unico}");
-                                if(a) a.play().catch(function(e){{console.log("Audio bloqueado");}});
-                            </script>
-                        </div>
+                                if (!a) return;
+                                
+                                // 1. Intento de reproducción automática (Pase VIP en PC)
+                                var p = a.play();
+                                
+                                if (p !== undefined) {{
+                                    p.catch(function(e) {{
+                                        console.log("Seguridad de iOS detectada. Esperando interacción.");
+                                        // 2. Si iOS lo bloquea, se activa al primer roce de la pantalla
+                                        var unlock = function() {{
+                                            a.play();
+                                            document.removeEventListener('touchstart', unlock);
+                                            document.removeEventListener('click', unlock);
+                                        }};
+                                        document.addEventListener('touchstart', unlock, {{once: true}});
+                                        document.addEventListener('click', unlock, {{once: true}});
+                                    }});
+                                }}
+                            }})();
+                        </script>
                     """
-                    # Inyectamos el audio como un componente independiente, igual que en el saludo inicial
-                    st.components.v1.html(audio_html, height=0)
+                    # Inyectamos directo al DOM principal, esquivando el bloqueo de iframes de Apple
+                    st.markdown(audio_html, unsafe_allow_html=True)
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
-    except Exception as e:
-        st.error(f"Error en el sistema: {e}")
+            except Exception as e:
+                st.error(f"Error en el sistema: {e}")
         
         
 
