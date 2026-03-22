@@ -222,12 +222,17 @@ if user_text or imagen_actual:
                 segundos_reales = int(match_timer.group(1))
                 respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
                 
-                # 1. Definimos la función de aviso
+                # 1. Definimos la función de aviso (Versión Reloj Atómico)
                 def aviso_final_iphone(segundos):
                     import time
-                    # Ajuste de 3 segundos para precisión total
-                    tiempo_ajustado = max(0, segundos - 3) 
-                    time.sleep(tiempo_ajustado)
+                    
+                    # Calculamos la HORA EXACTA del futuro en la que debe sonar
+                    hora_final = time.time() + (segundos - 3)
+                    
+                    # En lugar de un "sueño profundo", miramos el reloj cada medio segundo
+                    while time.time() < hora_final:
+                        time.sleep(0.5) 
+                        
                     notificaciones.enviar_pushover(
                         mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
                         titulo="ALERTA CRÍTICA",
