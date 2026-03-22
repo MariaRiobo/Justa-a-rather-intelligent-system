@@ -13,7 +13,7 @@ def extraer_segundos(texto_usuario):
     hora_str = hora_actual.strftime('%H:%M:%S')
     
     prompt = f"""
-    Calcula cuántos SEGUNDOS faltan desde las {hora_str} hasta la hora o tiempo que pide el usuario.
+    Calcula cuántos SEGUNDOS faltan desde la hora actual ({hora_str}) hasta lo que pide el usuario. Si pide una hora fija, resta la hora actual de esa hora.
     Usuario: "{texto_usuario}"
     Responde ÚNICAMENTE con el número final entre corchetes. Ejemplo: [300]. Nada más.
     """
