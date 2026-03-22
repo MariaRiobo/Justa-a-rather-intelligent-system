@@ -215,15 +215,15 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
         #ALARMA
-        # Usamos 'respuesta' que es la variable que ya definió el cerebro arriba
+       # 1. Detectamos si la respuesta trae un TIMER
         match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
         
         if match_timer:
             segundos_falsos = int(match_timer.group(1))
-            # Limpiamos el código [TIMER:XXX] de la respuesta principal
+            # Limpiamos el texto para el chat
             respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
             
-            # Inyectamos el componente de audio y alerta
+            # Inyectamos el JavaScript (Corregido sin la llave extra)
             st.components.v1.html(f"""
                 <script>
                     setTimeout(function() {{
@@ -232,7 +232,7 @@ if user_text or imagen_actual:
                         alert("¡JEFA, EL TIEMPO HA EXPIRADO!");
                     }}, {segundos_falsos * 1000});
                 </script>
-            """, height=0)})
+            """, height=0)
 
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
