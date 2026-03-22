@@ -1,4 +1,4 @@
-# app.py funcionaaaaaaa
+# app.py funcionaaaaaa
 import streamlit as st
 from streamlit_mic_recorder import mic_recorder
 import herramientas
@@ -139,31 +139,9 @@ with st.expander("Activar Sensores Ópticos"):
 with st.expander("Subir archivos"):
     archivo_subido = st.file_uploader("Subir documento (PDF o TXT)", type=['txt', 'pdf'])
     texto_documento = ""
-    
     if archivo_subido is not None:
-        # Si es un archivo nuevo, lo leemos
-        if "archivo_actual" not in st.session_state or st.session_state.archivo_actual != archivo_subido.name:
-            archivo_subido.seek(0) 
-            texto_extraido = herramientas.extraer_texto(archivo_subido)
-            
-            # EL TRUCO: Le ponemos una etiqueta clara para que EDITH sepa cómo se llama el archivo
-            st.session_state.texto_cache = f"\n\n--- INICIO DEL DOCUMENTO: {archivo_subido.name} ---\n{texto_extraido}\n--- FIN DEL DOCUMENTO ---\n"
-            st.session_state.archivo_actual = archivo_subido.name
-            
-        texto_documento = st.session_state.texto_cache
-        
-        # Validación de seguridad: ¿Realmente pudimos leer texto?
-        if len(st.session_state.texto_cache) < 150: # Si tiene menos de 150 caracteres (solo nuestras etiquetas)
-            st.warning("⚠️ E.D.I.T.H.: El PDF parece estar vacío o es una imagen escaneada. Mis sensores de texto no detectan letras legibles.")
-        else:
-            st.success(f"Archivo '{archivo_subido.name}' escaneado, etiquetado y en memoria activa.")
-            
-    else:
-        # Limpieza si cierras el archivo
-        st.session_state.texto_cache = ""
-        st.session_state.archivo_actual = ""
-        
-        
+        texto_documento = herramientas.extraer_texto(archivo_subido)
+        st.success(f"Archivo '{archivo_subido.name}' escaneado.")
 
 # --- CONTROLES DE ENTRADA (ESTO ES LO QUE FALTABA) ---
 audio_data = mic_recorder(start_prompt="HABLAR", stop_prompt=" ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
@@ -231,34 +209,34 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-# C. PROTOCOLO DE VOZ (Táctica Híbrida: PC Invisible / Móvil Visible)
+       # C. PROTOCOLO DE VOZ (Estabilizado con Components)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
+                    import time
                     audio_b64 = voz.generar_audio(t_voz)
+                    id_unico = int(time.time() * 1000)
                     
-                    # CSS Adaptativo: Oculta el audio SOLO en computadoras. 
-                    # En móviles lo deja visible para que puedas darle Play si el teléfono lo bloquea.
-                    st.markdown(
-                        """
-                        <style>
-                            @media only screen and (min-width: 768px) {
-                                audio { display: none !important; }
-                            }
-                        </style>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    
-                    # Reproductor oficial de Streamlit
-                    st.audio(f"data:audio/mpeg;base64,{audio_b64}", format="audio/mpeg", autoplay=True)
+                    audio_html = f"""
+                        <div style="display:none;">
+                            <audio autoplay="true" id="audio_{id_unico}">
+                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                            </audio>
+                            <script>
+                                var a = document.getElementById("audio_{id_unico}");
+                                if(a) a.play().catch(function(e){{console.log("Audio bloqueado");}});
+                            </script>
+                        </div>
+                    """
+                    # Inyectamos el audio como un componente independiente, igual que en el saludo inicial
+                    st.components.v1.html(audio_html, height=0)
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
-
-    # Este except cierra el bloque try principal de procesamiento
     except Exception as e:
         st.error(f"Error en el sistema: {e}")
+        
+        
 
 
 # --- MOSTRAR CHAT ---
@@ -268,4 +246,5 @@ for item in reversed(st.session_state.chat_history):
     avatar = "👓" if autor == "EDITH" else "👤"
     with st.chat_message("assistant" if autor == "EDITH" else "user", avatar=avatar):
         st.write(f"**{autor}:** {msg}")
+
 
