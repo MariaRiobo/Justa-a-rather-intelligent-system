@@ -188,62 +188,44 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-# --- 3. INTERFAZ DE SALIDA - PROTOCOLO STARK ---
+# --- 3. INTERFAZ DE SALIDA - PROTOCOLO ESTABLE ---
         if respuesta:
-            # 1. GUARDADO SILENCIOSO
-            if "chat_history" in st.session_state:
+            # A. GUARDADO (Evitamos duplicados verificando el último mensaje)
+            if not st.session_state.chat_history or st.session_state.chat_history[-1]["msg"] != respuesta:
                 st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
                 st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
-            memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
+                memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # 2. PROCESAMIENTO VISUAL (Solo si es redacción)
+            # B. PROCESAMIENTO VISUAL (Solo para Redacción)
             if es_redaccion:
                 with st.spinner("Limpiando borrador..."):
                     prompt_limpieza = f"ESTRICTO: Reescribe esto para que sea UN SOLO PÁRRAFO de texto natural. Elimina 'Borrador:', 'Firma:', 'Mensaje para:', asteriscos y negritas. Solo el contenido para enviar: {respuesta}"
                     borrador_final = cerebro.pensar_respuesta(prompt_limpieza, [], "")
                     borrador_final = borrador_final.strip().strip('"').replace("**", "")
 
-           
+                
                 st.code(borrador_final, language=None, wrap_lines=True)
                 st.info("Usa el icono de arriba a la derecha para copiar.")
 
-         # 3. PROTOCOLO DE VOZ (Universal y Persistente)
+            # C. PROTOCOLO DE VOZ (Sin interrupciones de refresco)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
-                    # Usamos un div con un ID único y un script de auto-destrucción
-                    import time
-                    audio_id = int(time.time())
                     audio_html = f"""
-                        <div id="audio_container_{audio_id}">
-                            <audio autoplay="true" style="display:none;">
-                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                            </audio>
-                        </div>
+                        <audio autoplay="true">
+                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                        </audio>
                     """
-                    # Inyectamos el audio justo antes de decidir si refrescamos o no
                     st.markdown(audio_html, unsafe_allow_html=True)
                 except:
                     pass
 
-            # 4. CONTROL DE FLUJO (El secreto de la fluidez)
-            if not es_redaccion:
-                # Calculamos el tiempo de habla estimado: ~15 caracteres por segundo
-                # Le damos un margen de seguridad para que el navegador "bufferize" el audio
-                tiempo_lectura = min(len(respuesta) / 12, 5.0) 
-                
-                # Mensaje visual opcional (puedes borrar la línea de abajo si prefieres silencio)
-                # st.caption("Procesando transmisión de audio...")
-                
-                import time
-                time.sleep(tiempo_lectura) # Aquí es donde EDITH gana tiempo para hablar
-                st.rerun()
+            # NOTA: Hemos eliminado st.rerun() y time.sleep(). 
+            # Esto evita el titileo y permite que el audio suene completo.
 
     except Exception as e:
         st.error(f"Falla crítica en el núcleo: {e}")
-
-
         
         
 # --- MOSTRAR CHAT ---
