@@ -215,26 +215,38 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
         #ALARMA
-      # --- ALARMA POR VOZ (SIn Cartel) ---
+    # --- ALARMA NIVEL STARK (VISUAL + VOZ) ---
         match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
         
         if match_timer:
             segundos_reales = int(match_timer.group(1))
             respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
             
-            # Generamos el audio del aviso final de antemano
-            aviso_texto = "Jefa, el tiempo programado ha finalizado."
-            audio_aviso_b64 = voz.generar_audio(aviso_texto)
+            # Preparamos el aviso de voz
+            aviso_final = "Atención Francis, el tiempo ha expirado."
+            audio_aviso_b64 = voz.generar_audio(aviso_final)
             
-            # Inyectamos el JS que solo reproduce el audio (Sin Alert)
+            # Inyectamos el JS con Reloj Visual
             st.components.v1.html(f"""
+                <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
+                    T-MINUS: <span id="timer_display">{segundos_reales}</span>s
+                </div>
                 <script>
-                    setTimeout(function() {{
-                        var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
-                        audio.play();
-                    }}, {segundos_reales * 1000});
+                    var timeLeft = {segundos_reales};
+                    var display = document.getElementById('timer_display');
+                    
+                    var countdown = setInterval(function() {{
+                        timeLeft--;
+                        display.innerHTML = timeLeft;
+                        if (timeLeft <= 0) {{
+                            clearInterval(countdown);
+                            document.getElementById('cronometro_stark').style.display = 'none';
+                            var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
+                            audio.play();
+                        }}
+                    }}, 1000);
                 </script>
-            """, height=0)
+            """, height=60)
 
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
