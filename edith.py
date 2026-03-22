@@ -190,73 +190,45 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-# --- 3. INTERFAZ DE SALIDA (RECONSTRUIDA) ---
+# --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
-            # A. GUARDADO SIN DUPLICADOS
+            # A. GUARDADO (Historial Limpio)
             if not st.session_state.chat_history or st.session_state.chat_history[-1]["msg"] != respuesta:
                 st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
                 st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
                 memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # B. LÓGICA DE REDACCIÓN (Solo si es mensaje para copiar)
+            # B. CANAL DE REDACCIÓN (Solo si pides un mensaje/correo)
             if es_redaccion:
-                with st.spinner("Refinando mensaje..."):
-                    p_limpieza = f"Actúa como redactor. Responde SOLO el texto para enviar, sin etiquetas como 'EDITH:' o 'Borrador:'. Texto: {respuesta}"
-                    borrador_final = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
-                
-             
-                st.code(borrador_final, language=None, wrap_lines=True)
-                st.info("Copia usando el icono de arriba a la derecha.")
+                with st.spinner("Extrayendo mensaje para enviar..."):
+                    # Filtro maestro: separa el mensaje real de la charla de EDITH
+                    p_limpieza = f"Actúa como filtro humano. Extrae SOLO el mensaje que el usuario debe enviar. Elimina 'EDITH:', introducciones de IA, reportes de seguridad y análisis táctico. Solo el texto natural: {respuesta}"
+                    borrador_limpio = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
 
-# --- 3. INTERFAZ DE SALIDA - PROTOCOLO FINAL ---
-        if respuesta:
-            # A. GUARDADO DE SEGURIDAD
-            # Verificamos que no sea el mismo mensaje para no duplicar en el historial
-            if not st.session_state.chat_history or st.session_state.chat_history[-1]["msg"] != respuesta:
-                st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
-                st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
-                memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
+                # Mostramos el borrador en un bloque destacado
+               
+                st.code(borrador_limpio, language=None, wrap_lines=True)
+                st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-            # B. MODO REDACCIÓN (Si aplica)
-            if es_redaccion:
-                with st.spinner("Limpiando borrador..."):
-                    p_limpieza = f"Responde SOLO el mensaje para enviar, sin etiquetas. Texto: {respuesta}"
-                    borrador_final = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
-                st.subheader("📋 Borrador Táctico")
-                st.code(borrador_final, language=None, wrap_lines=True)
-
-            # C. PROTOCOLO DE VOZ (Inyección Directa y Forzada)
-            if len(respuesta) < 900:
-                # Limpieza de texto para la voz
-                t_voz = respuesta.replace("EDITH:", "").replace("Francis:", "")
-                t_voz = t_voz.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
-                
+            # C. PROTOCOLO DE VOZ (TU AUDIO INTACTO)
+            if len(respuesta) < 800:
+                t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     import time
-                    audio_b64 = voz.generar_audio(t_voz.strip())
-                    # Generamos un ID único por mensaje
-                    id_msg = int(time.time() * 1000)
-                    
-                    # HTML con JavaScript de reproducción forzada
+                    audio_b64 = voz.generar_audio(t_voz)
+                    placeholder_audio = st.empty()
+                    id_unico = int(time.time() * 1000)
                     audio_html = f"""
-                        <div id="wrapper_{id_msg}" style="display:none;">
-                            <audio id="aud_{id_msg}" autoplay="true" preload="auto">
+                        <div id="wrapper_{id_unico}" style="display:none;">
+                            <audio autoplay="true" id="audio_{id_unico}">
                                 <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                                <script>document.getElementById("audio_{id_unico}").play();</script>
                             </audio>
-                            <script>
-                                var player = document.getElementById("aud_{id_msg}");
-                                if (player) {{
-                                    player.play().catch(function(error) {{
-                                        console.log("Audio bloqueado: requiere interacción");
-                                    }});
-                                }}
-                            </script>
                         </div>
                     """
-                    # Enviamos el audio al placeholder que creamos arriba del todo
                     placeholder_audio.markdown(audio_html, unsafe_allow_html=True)
                 except Exception as e_voz:
-                    st.error(f"Error de audio: {e_voz}")
+                    st.error(f"Fallo en enlace de voz: {e_voz}")
 
     except Exception as e:
         st.error(f"Error en el sistema: {e}")
