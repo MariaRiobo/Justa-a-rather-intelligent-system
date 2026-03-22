@@ -33,23 +33,24 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         with st.spinner("E.D.I.T.H. rastreando la red..."):
             datos_extra = herramientas.buscar_en_internet(texto_usuario)
             
-    # PRIORIDAD 5: Temporizador Táctico
+  # PRIORIDAD 5: Temporizador Táctico
     elif any(w in texto_min for w in ["alarma", "temporizador", "avísame", "avisame", "timer"]):
-        with st.spinner("Configurando reloj de cuenta regresiva..."):
+        with st.spinner("Sincronizando cronómetro táctico..."):
             segundos = temporizador.extraer_segundos(texto_usuario)
+            
             if segundos > 0:
-                # Calculamos la hora exacta a la que sonará la alarma
                 from datetime import datetime, timedelta
                 import pytz
                 
                 zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
+                # Calculamos el momento exacto en que debe sonar
                 hora_futura = datetime.now(zona_horaria) + timedelta(seconds=segundos)
                 hora_formateada = hora_futura.strftime('%H:%M')
                 
-                # Devolvemos el mensaje corto y directo que pediste
+                # El comando [TIMER:X] es lo que activa el sonido en el frontend
                 return f"[TIMER:{segundos}] Alarma puesta para las {hora_formateada}."
             else:
-                return "Jefa, no pude hacerlo."
+                return "Jefa, no pude hacerlo"
 
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
