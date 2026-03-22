@@ -124,9 +124,7 @@ if st.session_state.ejecutar_saludo:
             
                                                      
 
-
-
-# --- SENSORES ÓPTICOS (NUEVO) ---
+# --- SENSORES ÓPTICOS ---
 with st.expander("Activar Sensores Ópticos"):
     opcion_vision = st.radio("Modo de entrada:", ["Cámara", "Archivo"], horizontal=True)
     imagen_actual = None
@@ -141,161 +139,86 @@ with st.expander("Subir archivos"):
     texto_documento = ""
     if archivo_subido is not None:
         texto_documento = herramientas.extraer_texto(archivo_subido)
-        st.success(f"Archivo '{archivo_subido.name}' escaneado en memoria temporal.")
+        st.success(f"Archivo '{archivo_subido.name}' escaneado.")
 
+# --- CONTROLES DE ENTRADA (ESTO ES LO QUE FALTABA) ---
+audio_data = mic_recorder(start_prompt="🎙️ HABLAR", stop_prompt="🛑 ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
+texto_manual = st.chat_input("Escribe un comando o pega un link de YouTube...")
 
-
-# --- PROCESAMIENTO CENTRAL ---
+# --- PROCESAMIENTO CENTRAL UNIFICADO ---
 user_text = None
 if audio_data:
     user_text = cerebro.transcribir_audio(audio_data['bytes'])
 elif texto_manual:
     user_text = texto_manual
 
-# El sistema se activa si hay texto o una imagen
 if user_text or imagen_actual:
     try:
         respuesta = ""
         es_redaccion = False
-        
-        # 1. Lógica de Redacción o Charla
+        texto_youtube = ""
+        hubo_error_yt = False
+
+        # 1. DETECCIÓN DE REDACCIÓN O YOUTUBE
         if user_text:
-            palabras_clave = ["redacta", "escribe", "mandale", "mail", "correo", "mensaje", "redactar", "whatsapp"]
-            es_redaccion = any(p in user_text.lower() for p in palabras_clave)
-
-            if es_redaccion:
-                with st.spinner("E.D.I.T.H. está preparando la pluma..."):
-                    instruccion = f"La Jefa quiere redactar algo. Contexto: {user_text}. Estilo Stark."
-                    respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
-                    
-                    st.subheader("📋 Borrador Táctico")
-                    st.info(respuesta)
-                    boton_copy_html = f"""
-                        <button onclick="navigator.clipboard.writeText(`{respuesta.replace('`', "'")}`)" 
-                        style="background-color: #FF4B4B; color: white; border: none; padding: 12px; 
-                        border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold;">
-                            ⚡ COPIAR AL PORTAPAPELES
-                        </button>
-                    """
-                    st.components.v1.html(boton_copy_html, height=70)
-            else:
-                with st.spinner("E.D.I.T.H. pensando..."):
-                    respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, imagen_actual)
-        
-        elif imagen_actual:
-            with st.spinner("Analizando imagen..."):
-                respuesta = cerebro.pensar_respuesta("¿Qué ves en esta imagen?", st.session_state.chat_history, imagen_actual)
-
-        # 2. Finalización (Solo si hay respuesta)
-        if respuesta:
-            # Guardamos en historial una sola vez
-            st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+            # ¿Es redacción?
+            palabras_redaccion = ["redacta", "escribe", "mandale", "mail", "correo", "mensaje", "whatsapp"]
+            es_redaccion = any(p in user_text.lower() for p in palabras_redaccion)
             
-            # Voz
-            if len(respuesta) < 400:
-                audio_b64 = voz.generar_audio(respuesta.replace("*", ""))
-                st.markdown(f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>', unsafe_allow_html=True)
+            # ¿Es YouTube?
+            match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
+            if match_yt:
+                st.info("📹 Enlace detectado. Analizando video...")
+                transcripcion = youtube.obtener_transcripcion(match_yt.group(1))
+                if transcripcion.startswith("ERROR"):
+                    st.error("No pude acceder al guion del video.")
+                    hubo_error_yt = True
+                else:
+                    texto_youtube = f"\n\n--- GUION DE YOUTUBE ---\n{transcripcion}"
 
-            # Rerun solo si NO es redacción para no perder el botón de copiar
+        # 2. GENERACIÓN DE RESPUESTA
+        with st.spinner("E.D.I.T.H. procesando..."):
+            if es_redaccion:
+                instruccion = f"Redacta un borrador Stark para esto: {user_text}"
+                respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
+            elif imagen_actual:
+                respuesta = cerebro.pensar_respuesta(user_text if user_text else "Analiza esto", st.session_state.chat_history, imagen_actual)
+            else:
+                # Mezclamos Memoria + Documentos + YouTube
+                contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
+                respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
+
+        # 3. INTERFAZ DE SALIDA
+        if respuesta:
+            if es_redaccion:
+                st.subheader("📋 Borrador Táctico")
+                st.info(respuesta)
+                boton_copy = f"""<button onclick="navigator.clipboard.writeText(`{respuesta.replace('`','')} `)" style="background:#FF4B4B;color:white;border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold;">⚡ COPIAR AL PORTAPAPELES</button>"""
+                st.components.v1.html(boton_copy, height=70)
+            
+            # Guardar en Historial y Memoria
+            st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
+            st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+            memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
+
+            # Audio
+            if len(respuesta) < 500:
+                t_voz = respuesta.replace("*","").replace("#","")
+                audio_b64 = voz.generar_audio(t_voz)
+                audio_html = f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>'
+                audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
+
             if not es_redaccion:
                 st.rerun()
 
     except Exception as e:
-        st.error(f"Error en el núcleo de procesamiento: {e}")
-        
-        # --- 1. DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
-        texto_youtube = ""
-        hubo_error_yt = False # Bandera de seguridad activada
-        
-        if user_text:
-            match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
-            if match_yt:
-                url_encontrada = match_yt.group(1)
-                st.info("📹 Enlace detectado. Hackeando base de datos de YouTube...")
-                
-                transcripcion = youtube.obtener_transcripcion(url_encontrada)
-                
-                # Si falló, mostramos el error y activamos el protocolo de emergencia
-                if transcripcion.startswith("ERROR_INTERNO"):
-                    st.error(f"🚨 Falla en extracción de video: {transcripcion}")
-                    hubo_error_yt = True
-                    # Salvavidas: Definimos la respuesta para que la app no explote
-                    respuesta = "Señor, no pude acceder a los subtítulos de ese video. Es probable que estén bloqueados o no existan."
-                else:
-                    # Si funcionó, le pasamos el guion a la IA
-                    st.success("✅ Guion extraído con éxito. Procesando...")
-                    texto_youtube = f"\n\n--- GUION DEL VIDEO DE YOUTUBE ---\n{transcripcion}"
-        
-      # --- 1.5 INTERCEPTOR DE MEMORIA A LARGO PLAZO ---
-        prompt_oculto = user_text
-        if user_text:
-            comando_min = user_text.lower()
-            if "recuerda que" in comando_min:
-                # Extraemos el recuerdo y lo guardamos en el JSON
-                nuevo_recuerdo = comando_min.split("recuerda que")[1].strip()
-                memoria.agregar_recuerdo(nuevo_recuerdo)
-                # Hackeamos el prompt para que la IA sepa que ya lo guardamos
-                prompt_oculto = f"El usuario te ordenó guardar este recuerdo: '{nuevo_recuerdo}'. Ya lo guardé en el disco duro local. Confirma brevemente por voz que lo recordarás para siempre."
-            
-            elif "olvida que" in comando_min:
-                # Extraemos y borramos del JSON
-                recuerdo_a_borrar = comando_min.split("olvida que")[1].strip()
-                memoria.borrar_recuerdo(recuerdo_a_borrar)
-                prompt_oculto = f"El usuario te pidió olvidar esto: '{recuerdo_a_borrar}'. Ya lo borré de tu disco duro. Confirma brevemente que lo has eliminado de tu base de datos."
-
-        # --- 2. ENRUTAMIENTO (Cerebro vs Visión) ---
-        # Si NO hubo error con YouTube, dejamos que la IA piense normalmente
-        if not hubo_error_yt:
-            # Traemos todos los recuerdos pasados
-            contexto_historico = memoria.obtener_contexto_memoria()
-            
-            # Juntamos documentos + YouTube + MEMORIA PROFUNDA
-            contexto_unificado = texto_documento + texto_youtube + contexto_historico
-            
-            if imagen_actual:
-                # Procesamiento visual (le pasamos el prompt oculto por si acaso)
-                respuesta = vision.analizar_imagen(imagen_actual.getvalue(), prompt_oculto)
-            else:
-                # Procesamiento lógico normal usando el prompt hackeado
-                respuesta = cerebro.pensar_respuesta(prompt_oculto, st.session_state.chat_history, contexto_unificado)
-                
-        # Guardamos en el historial visual (usamos texto_log para que en pantalla salga lo que dijiste, no el hackeo)
-        st.session_state.chat_history.append({"autor": "Francis", "msg": texto_log})
-        st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
-        
-        # 💾 PROTOCOLO DE PERSISTENCIA: Guardamos la interacción en la base de datos JSON
-        registro_memoria = f"Usuario dijo: {texto_log} | EDITH respondió: {respuesta}"
-        memoria.agregar_recuerdo(registro_memoria)
-        
-        # --- FILTRO PURIFICADOR DE VOZ ---
-        # Le quitamos asteriscos, numerales y guiones que traban al sintetizador
-        texto_limpio = respuesta.replace("*", "").replace("#", "").replace("_", "")
-        
-        try:
-            # Generamos la voz con el texto LIMPIO
-            audio_b64 = voz.generar_audio(texto_limpio)
-            st.session_state.audio_key += 1
-            
-            audio_html = f"""
-                <audio autoplay key="audio_{st.session_state.audio_key}">
-                    <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                </audio>
-            """
-            audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
-            
-        except Exception as error_voz:
-            # Si la voz falla, ahora nos avisará con un cartel amarillo sin romper la app
-            st.warning(f"🔇 Módulo de voz saturado: {error_voz}")
-            
-    except Exception as e:
-        st.error(f"Error general del sistema: {e}")
+        st.error(f"Falla crítica: {e}")
 
 # --- MOSTRAR CHAT ---
 for item in reversed(st.session_state.chat_history):
     autor = item.get("autor", "Desconocido")
     msg = item.get("msg", "")
     avatar = "👓" if autor == "EDITH" else "👤"
-    
     with st.chat_message("assistant" if autor == "EDITH" else "user", avatar=avatar):
         st.write(f"**{autor}:** {msg}")
 
