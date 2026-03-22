@@ -33,6 +33,8 @@ if "ejecutar_saludo" not in st.session_state:
     st.session_state.ejecutar_saludo = False
 if "password_correct" not in st.session_state:
     st.session_state.password_correct = False
+if "alarmas_activas" not in st.session_state:
+    st.session_state.alarmas_activas = []
     
 # --- 5. CONFIGURACIÓN UI Y ELEMENTOS VISUALES ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
@@ -183,6 +185,26 @@ if user_text or imagen_actual:
             if es_redaccion:
                 instruccion = f"Redacta un borrador Stark para esto: {user_text}"
                 respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
+                # --- INTERCEPTOR DE ALARMAS ---
+        if respuesta and respuesta.startswith("[TIMER:"):
+            cierre = respuesta.find("]")
+            if cierre != -1:
+                tiempo_timer = int(respuesta[7:cierre])
+                respuesta = respuesta[cierre+1:].strip() # Limpiamos el texto para que no se vea el corchete
+
+                import time
+                end_time = time.time() + tiempo_timer
+
+                # Generamos HOY el audio que sonará en el FUTURO
+                with st.spinner("Sintetizando voz de alarma..."):
+                    texto_alarma = "Atención Jefa. El tiempo del temporizador ha finalizado."
+                    audio_alarma_b64 = voz.generar_audio(texto_alarma)
+
+                # Guardamos la alarma en la memoria a corto plazo
+                st.session_state.alarmas_activas.append({
+                    "end_time": end_time,
+                    "audio": audio_alarma_b64
+                })
             
             # --- PROTOCOLO DE VISIÓN REACTIVADO ---
             elif imagen_actual:
@@ -265,4 +287,36 @@ for item in reversed(st.session_state.chat_history):
     with st.chat_message("assistant" if autor == "EDITH" else "user", avatar=avatar):
         st.write(f"**{autor}:** {msg}")
 
+# --- MOTOR DE ALARMAS EN SEGUNDO PLANO ---
+import time
+if st.session_state.alarmas_activas:
+    alarmas_restantes = []
+    for alarma in st.session_state.alarmas_activas:
+        tiempo_restante = alarma["end_time"] - time.time()
+
+        if tiempo_restante > 0:
+            # Inyectamos el reloj JavaScript para que corra independientemente en el navegador
+            ms_restantes = int(tiempo_restante * 1000)
+            js_timer = f"""
+                <script>
+                    setTimeout(function() {{
+                        var audio = new Audio("data:audio/mpeg;base64,{alarma['audio']}");
+                        audio.play();
+                    }}, {ms_restantes});
+                </script>
+            """
+            st.components.v1.html(js_timer, height=0)
+            alarmas_restantes.append(alarma) # Sigue activa
+        else:
+            # Si el tiempo ya pasó (ej. recargaste la página después de que expiró)
+            js_play = f"""
+                <script>
+                    var audio = new Audio("data:audio/mpeg;base64,{alarma['audio']}");
+                    audio.play();
+                </script>
+            """
+            st.components.v1.html(js_play, height=0)
+
+    # Actualizamos la memoria, borrando las alarmas que ya sonaron
+    st.session_state.alarmas_activas = alarmas_restantes
 
