@@ -216,59 +216,59 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
         #ALARMA
-   
-        match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
-        
-       if match_timer:
-            segundos_reales = int(match_timer.group(1))
-            respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
+    
+            match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
             
-            # --- 1. AVISO DE INICIO (Sonido suave) ---
-            notificaciones.enviar_pushover(
-                mensaje=f"Cronómetro iniciado: {segundos_reales}s.",
-                sonido="bike" # Sonido corto de inicio
-            )
-            
-            # --- 2. HILO DE ESPERA PARA EL FINAL ---
-            # Esto corre en segundo plano para no trabar la pantalla
-            import threading
-            import time
-
-            def aviso_final_iphone():
-                time.sleep(segundos_reales)
+            if match_timer:
+                segundos_reales = int(match_timer.group(1))
+                respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
+                
+                # 1. AVISO DE INICIO
                 notificaciones.enviar_pushover(
-                    mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
-                    titulo="ALERTA CRÍTICA",
-                    sonido="siren" # Sonido fuerte para el final
+                    mensaje=f"Cronómetro iniciado: {segundos_reales}s.",
+                    sonido="bike"
                 )
-
-            # Lanzamos el hilo para que espere y mande el Push al final
-            threading.Thread(target=aviso_final_iphone).start()
-
-            # --- 3. TU CÓDIGO DE VOZ Y RELOJ (PC) ---
-            # (Aquí dejas exactamente el bloque st.components.v1.html que ya tenías)
-            aviso_final = "Atención Francis, el tiempo ha expirado."
-            audio_aviso_b64 = voz.generar_audio(aviso_final)
-            
-            st.components.v1.html(f"""
-                <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
-                    T-MINUS: <span id="timer_display">{segundos_reales}</span>s
-                </div>
-                <script>
-                    var timeLeft = {segundos_reales};
-                    var display = document.getElementById('timer_display');
-                    var countdown = setInterval(function() {{
-                        timeLeft--;
-                        display.innerHTML = timeLeft;
-                        if (timeLeft <= 0) {{
-                            clearInterval(countdown);
-                            document.getElementById('cronometro_stark').style.display = 'none';
-                            var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
-                            audio.play();
-                        }}
-                    }}, 1000);
-                </script>
-            """, height=60)
+                
+                # 2. HILO DE ESPERA PARA EL FINAL
+                import threading
+                import time
+        
+                def aviso_final_iphone():
+                    time.sleep(segundos_reales)
+                    notificaciones.enviar_pushover(
+                        mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
+                        titulo="ALERTA CRÍTICA",
+                        sonido="siren"
+                    )
+        
+                threading.Thread(target=aviso_final_iphone).start()
+        
+                # 3. VOZ Y RELOJ (PC)
+                aviso_final = "Atención Francis, el tiempo ha expirado."
+                audio_aviso_b64 = voz.generar_audio(aviso_final)
+                
+                st.components.v1.html(f"""
+                    <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
+                        T-MINUS: <span id="timer_display">{{timeLeft}}</span>s
+                    </div>
+                    <script>
+                        var timeLeft = {segundos_reales};
+                        var display = document.getElementById('timer_display');
+                        var countdown = setInterval(function() {{
+                            timeLeft--;
+                            display.innerHTML = timeLeft;
+                            if (timeLeft <= 0) {{
+                                clearInterval(countdown);
+                                document.getElementById('cronometro_stark').style.display = 'none';
+                                var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
+                                audio.play();
+                            }}
+                        }}, 1000);
+                    </script>
+                """, height=60)
+           
+                
+      
            
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
