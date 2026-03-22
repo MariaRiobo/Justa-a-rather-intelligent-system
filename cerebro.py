@@ -34,24 +34,35 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             datos_extra = herramientas.buscar_en_internet(texto_usuario)
             
   # PRIORIDAD 5: Temporizador Táctico
-  
     elif any(w in texto_min for w in ["alarma", "temporizador", "avísame", "avisame", "timer"]):
+        import re
+        from datetime import datetime, timedelta
+        import pytz
+        
         with st.spinner("Sincronizando cronómetro..."):
-            # Usamos el módulo herramientas para calcular los segundos
-            segundos = herramientas.extraer_segundos(texto_usuario)
+            # Usamos la herramienta que ya tienes para obtener la hora
+            ahora_str = herramientas.obtener_fecha_hora()
             
-            if segundos > 0:
-                from datetime import datetime, timedelta
-                import pytz
+            # Pedimos a la IA que calcule los segundos basándose en esa hora
+            prompt_timer = f"HORA ACTUAL: {ahora_str}. Usuario dice: '{texto_usuario}'. ¿Cuántos segundos faltan? Responde solo el número entre corchetes. Ejemplo: [300]"
+            
+            try:
+                res_t = client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt_timer}],
+                    model="llama-3.1-8b-instant",
+                    temperature=0
+                )
+                match = re.search(r"\[(\d+)\]", res_t.choices[0].message.content)
+                segundos = int(match.group(1)) if match else 0
                 
-                zona = pytz.timezone('America/Argentina/Buenos_Aires')
-                hora_final = datetime.now(zona) + timedelta(seconds=segundos)
-                confirmacion = hora_final.strftime("%H:%M")
-                
-                # IMPORTANTE: El formato [TIMER:X] debe ir al inicio para que edith.py lo detecte
-                return f"[TIMER:{segundos}] Entendido. Alarma configurada para las {confirmacion}."
-            else:
-                return "jEFA, NO PUDE HACERLO"
+                if segundos > 0:
+                    zona = pytz.timezone('America/Argentina/Buenos_Aires')
+                    hora_final = (datetime.now(zona) + timedelta(seconds=segundos)).strftime("%H:%M")
+                    return f"[TIMER:{segundos}] Alarma configurada para las {hora_final}."
+                else:
+                    return "No pude calcular el tiempo, Jefa."
+            except:
+                return "Error en el sensor cronométrico."
 
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
