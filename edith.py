@@ -203,9 +203,9 @@ if user_text or imagen_actual:
                     borrador_final = cerebro.pensar_respuesta(prompt_limpieza, [], "")
                     borrador_final = borrador_final.strip().strip('"').replace("**", "")
 
-                st.subheader("📋 Borrador Táctico")
+           
                 st.code(borrador_final, language=None, wrap_lines=True)
-                st.info("👆 Usa el icono de arriba a la derecha para copiar.")
+                st.info("Usa el icono de arriba a la derecha para copiar.")
 
             # 3. PROTOCOLO DE VOZ (Universal)
             if len(respuesta) < 800:
