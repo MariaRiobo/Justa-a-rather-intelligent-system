@@ -178,17 +178,40 @@ if user_text or imagen_actual:
                 else:
                     texto_youtube = f"\n\n--- GUION DE YOUTUBE ---\n{transcripcion}"
 
-        # 2. GENERACIÓN DE RESPUESTA
+      # 2. GENERACIÓN DE RESPUESTA
         with st.spinner("E.D.I.T.H. procesando..."):
             if es_redaccion:
                 instruccion = f"Redacta un borrador Stark para esto: {user_text}"
                 respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
+            
+            # --- PROTOCOLO DE VISIÓN REACTIVADO ---
             elif imagen_actual:
-                respuesta = cerebro.pensar_respuesta(user_text if user_text else "Analiza esto", st.session_state.chat_history, imagen_actual)
+                # 1. Definimos la orden visual (lo que el usuario quiere saber de la foto)
+                user_text_para_vision = user_text if user_text else "Analiza esta imagen con detalle técnico."
+                
+                # 2. Extraemos la información real de la imagen (.getvalue() saca los bytes puros)
+                # Esto funciona tanto para 'Cámara' como para 'Archivo'.
+                image_bytes = imagen_actual.getvalue()
+                
+                # 3. Activamos los Ojos de EDITH (vision.py) para traducir la imagen a texto
+                analisis_visual_texto = vision.analizar_imagen(image_bytes, user_text_para_vision)
+                
+                # 4. Verificamos si hubo un fallo en los sensores ópticos
+                if analisis_visual_texto.startswith("ERROR"):
+                    st.error(f"Fallo en sensores ópticos: {analisis_visual_texto}")
+                    respuesta = "Jefa, mis sensores ópticos están descalibrados. No puedo procesar la imagen en este momento."
+                else:
+                    # 5. Mezclamos el análisis visual como contexto para que EDITH responda en el chat
+                    prompt_final = user_text if user_text else "Analiza esto"
+                    contexto_visual = f"\n\n--- ANÁLISIS VISUAL DE LA CÁMARA ---\n{analisis_visual_texto}"
+                    respuesta = cerebro.pensar_respuesta(prompt_final, st.session_state.chat_history, contexto_visual)
+         
+
             else:
                 # Mezclamos Memoria + Documentos + YouTube
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
+                
 
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
