@@ -225,7 +225,7 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 
 
-         # D. PROTOCOLO DE VOZ (Estabilizado con Components)
+                     # C. PROTOCOLO DE VOZ (Invisible con Toque Fantasma para iOS)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
@@ -234,24 +234,38 @@ if user_text or imagen_actual:
                     id_unico = int(time.time() * 1000)
                     
                     audio_html = f"""
-                        <div style="display:none;">
-                            <audio autoplay="true" id="audio_{id_unico}">
-                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                            </audio>
-                            <script>
-                                var a = document.getElementById("audio_{id_unico}");
-                                if(a) a.play().catch(function(e){{console.log("Audio bloqueado");}});
-                            </script>
-                        </div>
+                        <audio id="audio_{id_unico}" playsinline style="display:none;">
+                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                        </audio>
+                        <script>
+                            (function() {{
+                                var audioEl = document.getElementById("audio_{id_unico}");
+                                if (!audioEl) return;
+                                
+                                // Intento 1: Reproducción automática (Funciona perfecto en PC)
+                                var promise = audioEl.play();
+                                
+                                if (promise !== undefined) {{
+                                    promise.catch(function(error) {{
+                                        // Intento 2: Si iOS lo bloquea, se activa con el primer toque en la pantalla
+                                        var unlock = function() {{
+                                            audioEl.play();
+                                            document.removeEventListener('touchstart', unlock);
+                                            document.removeEventListener('click', unlock);
+                                        }};
+                                        document.addEventListener('touchstart', unlock, {{once: true}});
+                                        document.addEventListener('click', unlock, {{once: true}});
+                                    }});
+                                }}
+                            }})();
+                        </script>
                     """
-                    # Inyectamos el audio como un componente independiente, igual que en el saludo inicial
-                    st.components.v1.html(audio_html, height=0)
+                    # Inyectamos el código directamente en la página sin componentes aislados
+                    st.markdown(audio_html, unsafe_allow_html=True)
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
-    except Exception as e:
-        st.error(f"Error en el sistema: {e}")
-        
+
         
         
 # --- MOSTRAR CHAT ---
