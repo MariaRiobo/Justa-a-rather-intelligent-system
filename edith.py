@@ -198,12 +198,26 @@ if user_text or imagen_actual:
                 st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
                 memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # B. CANAL DE REDACCIÓN (Solo si pides un mensaje/correo)
+            # B. CANAL DE REDACCIÓN (Refinado y Profesional)
             if es_redaccion:
-                with st.spinner("Extrayendo mensaje para enviar..."):
-                    # Filtro maestro: separa el mensaje real de la charla de EDITH
-                    p_limpieza = f"Actúa como filtro humano. Extrae SOLO el mensaje que el usuario debe enviar. Elimina 'EDITH:', introducciones de IA, reportes de seguridad y análisis táctico. Solo el texto natural: {respuesta}"
+                with st.spinner("Refinando redacción..."):
+                    # Prompt avanzado para mejorar la calidad del texto
+                    p_limpieza = (
+                        "Actúa como un redactor experto en comunicación humana. "
+                        "Tu tarea es convertir el siguiente contenido en un mensaje listo para enviar. "
+                        "Reglas estrictas: "
+                        "1. Elimina cualquier mención a protocolos, seguridad o nombres de IA. "
+                        "2. No uses emojis ni etiquetas visuales. "
+                        "3. Corrige la puntuación y mejora la fluidez del lenguaje. "
+                        "4. El tono debe ser natural pero profesional. "
+                        "5. Entrega SOLAMENTE el cuerpo del mensaje. "
+                        f"Texto original: {respuesta}"
+                    )
                     borrador_limpio = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
+
+                st.subheader("Borrador para Enviar")
+                st.code(borrador_limpio, language=None, wrap_lines=True)
+                
 
                 # Mostramos el borrador en un bloque destacado
                
