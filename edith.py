@@ -206,8 +206,9 @@ if user_text or imagen_actual:
                 st.code(borrador_final, language=None, wrap_lines=True)
                 st.info("Copia usando el icono de arriba a la derecha.")
 
-            # C. PROTOCOLO DE VOZ (La clave para que no se corte)
+# C. PROTOCOLO DE VOZ (Versión Auto-Limpiante)
             if len(respuesta) < 900:
+                # Limpiamos prefijos para que no sea redundante al hablar
                 t_voz = respuesta.replace("EDITH:", "").replace("Francis:", "")
                 t_voz = t_voz.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 
@@ -216,25 +217,32 @@ if user_text or imagen_actual:
                     audio_b64 = voz.generar_audio(t_voz.strip())
                     id_aud = int(time.time() * 1000)
                     
-                    # Usamos un placeholder local para no mover nada de arriba
-                    placeholder_audio = st.empty()
+                    # Usamos un placeholder dedicado para que Streamlit SOBREESCRIBA el audio anterior
+                    # en lugar de acumularlos en la página.
+                    if "audio_placeholder" not in st.session_state:
+                        st.session_state.audio_placeholder = st.empty()
+                    
                     audio_html = f"""
                         <div id="voicewrap_{id_aud}" style="display:none;">
                             <audio autoplay="true" id="player_{id_aud}">
                                 <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
                             </audio>
                             <script>
+                                // 1. Detener cualquier otro audio que esté sonando
+                                document.querySelectorAll('audio').forEach(el => {{
+                                    if(el.id !== "player_{id_aud}") el.pause();
+                                }});
+                                // 2. Reproducir el nuevo
                                 var audio = document.getElementById("player_{id_aud}");
-                                if(audio) {{
-                                    audio.play().catch(function(e) {{ console.log("Bloqueado"); }});
-                                }}
+                                audio.play().catch(function(e) {{ console.log("Bloqueado"); }});
                             </script>
                         </div>
                     """
-                    placeholder_audio.markdown(audio_html, unsafe_allow_html=True)
+                    # Esto borra el audio del mensaje anterior y pone el nuevo
+                    st.session_state.audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
                 except:
                     pass
-            
+                    
             # --- NOTA IMPORTANTE: Quitamos st.rerun() para que el audio no se corte ---
 
     except Exception as e:
