@@ -250,7 +250,7 @@ if user_text or imagen_actual:
                 )
         
                 # 4. VOZ Y RELOJ (PC)
-                aviso_final = "Atención Francis, el tiempo ha expirado."
+                aviso_final = "Francis, la cuenta regresiva terminó."
                 audio_aviso_b64 = voz.generar_audio(aviso_final)
                 
                 # ¡ESTE BLOQUE AHORA ESTÁ FIRMEMENTE DENTRO DEL IF!
