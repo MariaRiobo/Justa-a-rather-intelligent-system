@@ -217,6 +217,7 @@ if user_text or imagen_actual:
         #ALARMA
 
         # 1. Detectamos si la respuesta trae un TIMER
+        respuesta_edith = cerebro.pensar_respuesta(prompt, st.session_state.chat_history)
         match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta_edith)
         
         if match_timer:
