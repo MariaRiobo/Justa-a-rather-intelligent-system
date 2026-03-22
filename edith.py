@@ -207,21 +207,37 @@ if user_text or imagen_actual:
                 st.code(borrador_final, language=None, wrap_lines=True)
                 st.info("Usa el icono de arriba a la derecha para copiar.")
 
-            # 3. PROTOCOLO DE VOZ (Universal)
+         # 3. PROTOCOLO DE VOZ (Universal y Persistente)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
+                    # Usamos un div con un ID único y un script de auto-destrucción
                     import time
-                    audio_html = f'<audio autoplay="true" key="{int(time.time())}"><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>'
+                    audio_id = int(time.time())
+                    audio_html = f"""
+                        <div id="audio_container_{audio_id}">
+                            <audio autoplay="true" style="display:none;">
+                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                            </audio>
+                        </div>
+                    """
+                    # Inyectamos el audio justo antes de decidir si refrescamos o no
                     st.markdown(audio_html, unsafe_allow_html=True)
                 except:
                     pass
 
-            # 4. CONTROL DE FLUJO
+            # 4. CONTROL DE FLUJO (El secreto de la fluidez)
             if not es_redaccion:
+                # Calculamos el tiempo de habla estimado: ~15 caracteres por segundo
+                # Le damos un margen de seguridad para que el navegador "bufferize" el audio
+                tiempo_lectura = min(len(respuesta) / 12, 5.0) 
+                
+                # Mensaje visual opcional (puedes borrar la línea de abajo si prefieres silencio)
+                # st.caption("Procesando transmisión de audio...")
+                
                 import time
-                time.sleep(1.2)
+                time.sleep(tiempo_lectura) # Aquí es donde EDITH gana tiempo para hablar
                 st.rerun()
 
     except Exception as e:
