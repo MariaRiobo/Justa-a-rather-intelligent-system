@@ -199,13 +199,11 @@ if user_text or imagen_actual:
             # 2. PROCESAMIENTO VISUAL (Solo si es redacción)
             if es_redaccion:
                 with st.spinner("Limpiando borrador..."):
-                    # RE-PROCESAMOS EL PROMPT PARA QUE SEA SOLO TEXTO
                     prompt_limpieza = f"ESTRICTO: Reescribe esto para que sea UN SOLO PÁRRAFO de texto natural. Elimina 'Borrador:', 'Firma:', 'Mensaje para:', asteriscos y negritas. Solo el contenido para enviar: {respuesta}"
                     borrador_final = cerebro.pensar_respuesta(prompt_limpieza, [], "")
                     borrador_final = borrador_final.strip().strip('"').replace("**", "")
 
                 st.subheader("📋 Borrador Táctico")
-                # El componente 'st.code' es el que tiene el botón de copiar que sí funciona
                 st.code(borrador_final, language=None, wrap_lines=True)
                 st.info("👆 Usa el icono de arriba a la derecha para copiar.")
 
@@ -223,9 +221,14 @@ if user_text or imagen_actual:
             # 4. CONTROL DE FLUJO
             if not es_redaccion:
                 import time
-                time.sleep(1.2) # Tiempo para que el audio cargue antes del refresco
+                time.sleep(1.2)
                 st.rerun()
 
+    except Exception as e:
+        st.error(f"Falla crítica en el núcleo: {e}")
+
+
+        
         
 # --- MOSTRAR CHAT ---
 for item in reversed(st.session_state.chat_history):
