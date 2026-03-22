@@ -215,26 +215,30 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
         #ALARMA
-        if respuesta and respuesta.startswith("[TIMER:"):
-            cierre = respuesta.find("]")
-            if cierre != -1:
-                tiempo_timer = int(respuesta[7:cierre])
-                respuesta = respuesta[cierre+1:].strip() # Limpiamos el texto para ocultar el código
-                
-                import time
-                end_time = time.time() + tiempo_timer
-                
-                # Generamos HOY el audio que sonará en el FUTURO
-                with st.spinner("Sintetizando voz de alarma..."):
-                    texto_alarma = "Atención Jefa. El tiempo del temporizador ha finalizado."
-                    audio_alarma_b64 = voz.generar_audio(texto_alarma)
-                
-                # Guardamos la alarma en la memoria a corto plazo
-                st.session_state.alarmas_activas.append({
-                    "end_time": end_time,
-                    "audio": audio_alarma_b64
-                })
-                
+        # --- edith.py (Dentro del bloque donde se muestra la respuesta de EDITH) ---
+
+        # 1. Detectamos si la respuesta trae un TIMER
+        match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta_edith)
+        
+        if match_timer:
+            segundos_falsos = int(match_timer.group(1))
+            # Limpiamos el texto para que no se vea el código feo [TIMER:123]
+            respuesta_limpia = re.sub(r"\[TIMER:\d+\]", "", respuesta_edith).strip()
+            
+            # Inyectamos un componente invisible que espera los segundos y hace sonar la alarma
+            st.components.v1.html(f"""
+                <script>
+                    setTimeout(function() {{
+                        var audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+                        audio.play();
+                        alert("¡JEFA, EL TIEMPO HA EXPIRADO!");
+                    }}, {segundos_falsos * 1000});
+                </script>
+            """, height=0)
+            
+            st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta_limpia})
+        else:
+            st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta_edith})
 
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
