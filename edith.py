@@ -215,32 +215,32 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-        #ALARMA
-    
-            match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
-            
-           if match_timer:
-            segundos_reales = int(match_timer.group(1))
-            respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
-            
-            # --- 1. DEFINIR LA FUNCIÓN CON ARGUMENTO ---
-            # Le agregamos (segundos) para que la función RECIBA el dato
-            def aviso_final_iphone(segundos):
-                import time
-                # Ahora usamos 'segundos' en vez de 'segundos_reales'
-                tiempo_ajustado = max(0, segundos - 3) 
-                time.sleep(tiempo_ajustado)
+            #ALARMA
+        
+                match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
                 
-                notificaciones.enviar_pushover(
-                    mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
-                    titulo="ALERTA CRÍTICA",
-                    sonido="siren"
-                )
-
-            # --- 2. LANZAR EL HILO PASANDO EL DATO ---
-            # Usamos 'args' para enviarle los segundos_reales a la función
-            import threading
-            threading.Thread(target=aviso_final_iphone, args=(segundos_reales,)).start()
+               if match_timer:
+                    segundos_reales = int(match_timer.group(1))
+                    respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
+                
+                # --- 1. DEFINIR LA FUNCIÓN CON ARGUMENTO ---
+                # Le agregamos (segundos) para que la función RECIBA el dato
+                def aviso_final_iphone(segundos):
+                    import time
+                    # Ahora usamos 'segundos' en vez de 'segundos_reales'
+                    tiempo_ajustado = max(0, segundos - 3) 
+                    time.sleep(tiempo_ajustado)
+                    
+                    notificaciones.enviar_pushover(
+                        mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
+                        titulo="ALERTA CRÍTICA",
+                        sonido="siren"
+                    )
+    
+                # --- 2. LANZAR EL HILO PASANDO EL DATO ---
+                # Usamos 'args' para enviarle los segundos_reales a la función
+                import threading
+                threading.Thread(target=aviso_final_iphone, args=(segundos_reales,)).start()
 
         
                 # 3. VOZ Y RELOJ (PC)
