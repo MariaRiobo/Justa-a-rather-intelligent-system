@@ -155,17 +155,19 @@ elif texto_manual:
 # El sistema se activa si hay texto o una imagen
 if user_text or imagen_actual:
     try:
-        # 1. Definimos qué decir (Prioridad a la redacción)
+        respuesta = ""
+        es_redaccion = False
+        
+        # 1. Lógica de Redacción o Charla
         if user_text:
             palabras_clave = ["redacta", "escribe", "mandale", "mail", "correo", "mensaje", "redactar", "whatsapp"]
-            es_redaccion = any(palabra in user_text.lower() for palabra in palabras_clave)
+            es_redaccion = any(p in user_text.lower() for p in palabras_clave)
 
             if es_redaccion:
                 with st.spinner("E.D.I.T.H. está preparando la pluma..."):
                     instruccion = f"La Jefa quiere redactar algo. Contexto: {user_text}. Estilo Stark."
                     respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
                     
-                    # Interfaz de copiado que aparece solo cuando redacta
                     st.subheader("📋 Borrador Táctico")
                     st.info(respuesta)
                     boton_copy_html = f"""
@@ -177,38 +179,29 @@ if user_text or imagen_actual:
                     """
                     st.components.v1.html(boton_copy_html, height=70)
             else:
-                # Flujo normal de charla
                 with st.spinner("E.D.I.T.H. pensando..."):
                     respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, imagen_actual)
         
         elif imagen_actual:
-            # Si solo hay imagen sin texto
             with st.spinner("Analizando imagen..."):
                 respuesta = cerebro.pensar_respuesta("¿Qué ves en esta imagen?", st.session_state.chat_history, imagen_actual)
 
-        # 2. Guardar en historial y ejecutar voz
-        st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
-        
-        # Generar audio si no es un texto demasiado largo (opcional)
-        if len(respuesta) < 400:
-            audio_b64 = voz.generar_audio(respuesta.replace("*", ""))
-            audio_html = f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>'
-            st.markdown(audio_html, unsafe_allow_html=True)
+        # 2. Finalización (Solo si hay respuesta)
+        if respuesta:
+            # Guardamos en historial una sola vez
+            st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+            
+            # Voz
+            if len(respuesta) < 400:
+                audio_b64 = voz.generar_audio(respuesta.replace("*", ""))
+                st.markdown(f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>', unsafe_allow_html=True)
 
-        # Solo hacemos rerun si NO es redacción, para que el botón de copiar no desaparezca
-        if user_text and not any(p in user_text.lower() for p in ["redacta", "escribe", "mail", "whatsapp"]):
-            st.rerun()
+            # Rerun solo si NO es redacción para no perder el botón de copiar
+            if not es_redaccion:
+                st.rerun()
 
     except Exception as e:
         st.error(f"Error en el núcleo de procesamiento: {e}")
-        
-    # 3. Guardamos en el historial (esto se ejecuta para ambos casos)
-    st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
-    
-    # IMPORTANTE: Si es redacción, no hacemos rerun inmediato para que no desaparezca el botón
-    if not es_redaccion:
-        st.rerun()
-        
         
         # --- 1. DETECCIÓN AUTOMÁTICA DE YOUTUBE ---
         texto_youtube = ""
