@@ -38,10 +38,18 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         with st.spinner("Configurando reloj de cuenta regresiva..."):
             segundos = temporizador.extraer_segundos(texto_usuario)
             if segundos > 0:
-                # Devolvemos un comando oculto [TIMER:X] que edith.py leerá en secreto
-                return f"[TIMER:{segundos}] Comandante, he configurado el temporizador táctico para {segundos} segundos. El sistema le avisará por voz automáticamente."
+                # Calculamos la hora exacta a la que sonará la alarma
+                from datetime import datetime, timedelta
+                import pytz
+                
+                zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
+                hora_futura = datetime.now(zona_horaria) + timedelta(seconds=segundos)
+                hora_formateada = hora_futura.strftime('%H:%M')
+                
+                # Devolvemos el mensaje corto y directo que pediste
+                return f"[TIMER:{segundos}] Alarma puesta para las {hora_formateada}."
             else:
-                return "Comandante, no pude identificar la cantidad de tiempo. Por favor, especifique los minutos o segundos exactos."
+                return "Jefa, no pude hacerlo."
 
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
