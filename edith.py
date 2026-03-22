@@ -219,23 +219,37 @@ if user_text or imagen_actual:
    
         match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
         
-        if match_timer:
+       if match_timer:
             segundos_reales = int(match_timer.group(1))
             respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
             
-            # 1. ENVIAR NOTIFICACIÓN AL IPHONE (Vía Pushover)
-            # Esto llega apenas configurás la alarma
-            import notificaciones
+            # --- 1. AVISO DE INICIO (Sonido suave) ---
             notificaciones.enviar_pushover(
-                mensaje=f"Temporizador iniciado. Te avisaré en {segundos_reales} segundos.",
-                titulo="E.D.I.T.H. Cronos"
+                mensaje=f"Cronómetro iniciado: {segundos_reales}s.",
+                sonido="bike" # Sonido corto de inicio
             )
             
-            # 2. PREPARAMOS EL AVISO DE VOZ PARA LA PC
+            # --- 2. HILO DE ESPERA PARA EL FINAL ---
+            # Esto corre en segundo plano para no trabar la pantalla
+            import threading
+            import time
+
+            def aviso_final_iphone():
+                time.sleep(segundos_reales)
+                notificaciones.enviar_pushover(
+                    mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
+                    titulo="ALERTA CRÍTICA",
+                    sonido="siren" # Sonido fuerte para el final
+                )
+
+            # Lanzamos el hilo para que espere y mande el Push al final
+            threading.Thread(target=aviso_final_iphone).start()
+
+            # --- 3. TU CÓDIGO DE VOZ Y RELOJ (PC) ---
+            # (Aquí dejas exactamente el bloque st.components.v1.html que ya tenías)
             aviso_final = "Atención Francis, el tiempo ha expirado."
             audio_aviso_b64 = voz.generar_audio(aviso_final)
             
-            # 3. INYECTAMOS EL JS CON RELOJ VISUAL Y VOZ FINAL
             st.components.v1.html(f"""
                 <div id="cronometro_stark" style="position:fixed; top:10px; right:10px; background:rgba(0,191,255,0.2); border:1px solid #00fbff; color:#00fbff; padding:10px; border-radius:10px; font-family:monospace; z-index:9999;">
                     T-MINUS: <span id="timer_display">{segundos_reales}</span>s
@@ -243,21 +257,19 @@ if user_text or imagen_actual:
                 <script>
                     var timeLeft = {segundos_reales};
                     var display = document.getElementById('timer_display');
-                    
                     var countdown = setInterval(function() {{
                         timeLeft--;
                         display.innerHTML = timeLeft;
                         if (timeLeft <= 0) {{
                             clearInterval(countdown);
                             document.getElementById('cronometro_stark').style.display = 'none';
-                            
-                            // Reproduce la voz de EDITH en la PC
                             var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
                             audio.play();
                         }}
                     }}, 1000);
                 </script>
             """, height=60)
+           
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
             # A. GUARDADO (Historial Limpio)
