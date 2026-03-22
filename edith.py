@@ -209,25 +209,24 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-            # C. PROTOCOLO DE VOZ (TU AUDIO INTACTO ORIGINAL)
+                        # C. PROTOCOLO DE VOZ (El original que funcionaba al 100%)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
-                    import time
+                    import streamlit.components.v1 as components
                     audio_b64 = voz.generar_audio(t_voz)
-                    placeholder_audio = st.empty()
-                    id_unico = int(time.time() * 1000)
+                    
                     audio_html = f"""
-                        <div id="wrapper_{id_unico}" style="display:none;">
-                            <audio autoplay="true" id="audio_{id_unico}">
-                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                                <script>document.getElementById("audio_{id_unico}").play();</script>
-                            </audio>
-                        </div>
+                        <audio autoplay="true">
+                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                        </audio>
                     """
-                    placeholder_audio.markdown(audio_html, unsafe_allow_html=True)
+                    # Usamos components.html con height=0 para que sea invisible pero se ejecute siempre
+                    components.html(audio_html, height=0)
+                    
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
+
 
     # Este es el bloque de cierre que causaba el fallo crítico. Ahora está alineado.
     except Exception as e:
