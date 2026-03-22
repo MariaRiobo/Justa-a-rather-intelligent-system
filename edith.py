@@ -11,31 +11,40 @@ import vision
 import re
 import youtube
 import memoria
+import base64
+
 
 # --- 🔊 FUNCIÓN UNIVERSAL DE AUDIO (FIX iPHONE) ---
 def reproducir_audio_base64(audio_b64, key):
-    audio_html = f"""
-        <audio id="audio_{key}" playsinline>
-            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-        </audio>
+    audio_bytes = base64.b64decode(audio_b64)
 
-        <script>
-        const audio = document.getElementById("audio_{key}");
+    # renderiza audio real (esto sí le gusta a iPhone)
+    st.audio(audio_bytes, format="audio/mpeg")
 
-        // Intento inmediato (desktop)
-        audio.play().catch(() => {{
-            // iPhone: espera interacción del usuario (tap, mic, etc.)
-            const resumeAudio = () => {{
-                audio.play();
-                document.removeEventListener("click", resumeAudio);
-                document.removeEventListener("touchstart", resumeAudio);
-            }};
-            document.addEventListener("click", resumeAudio);
-            document.addEventListener("touchstart", resumeAudio);
-        }});
-        </script>
+    # JS para intentar autoplay sobre el audio renderizado
+    autoplay_js = f"""
+    <script>
+    const audios = window.parent.document.querySelectorAll("audio");
+    const audio = audios[audios.length - 1];
+
+    if (audio) {{
+        const playPromise = audio.play();
+
+        if (playPromise !== undefined) {{
+            playPromise.catch(() => {{
+                const resume = () => {{
+                    audio.play();
+                    document.removeEventListener("touchstart", resume);
+                    document.removeEventListener("click", resume);
+                }};
+                document.addEventListener("touchstart", resume);
+                document.addEventListener("click", resume);
+            }});
+        }}
+    }}
+    </script>
     """
-    st.components.v1.html(audio_html, height=0)
+    st.components.v1.html(autoplay_js, height=0)
 
 
 # --- ESTADOS ---
