@@ -191,39 +191,45 @@ if user_text or imagen_actual:
    # --- 3. INTERFAZ DE SALIDA ---
 
         if respuesta:
-            if es_redaccion:
+           if es_redaccion:
                 with st.spinner("E.D.I.T.H. está preparando la pluma..."):
                     instruccion = f"""
-                    Actúa como redactor profesional. Genera UN BORRADOR para: {user_text}.
+                    Actúa como redactor Stark. Genera UN BORRADOR para: {user_text}.
                     REGLA DE ORO: Devuelve ÚNICAMENTE el texto del mensaje, sin introducciones, sin comillas, y sin nombres de usuario. 
-                    Estilo Stark.
+                    Estilo Stark elegante.
                     """
-                    # CORRECCIÓN AQUÍ: pensar_respuesta en lugar de think_response
+                    # CORRECCIÓN: pensar_respuesta en lugar de think_response
                     respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
                     respuesta_limpia = respuesta.strip().strip('"').strip("'")
                     
-                    st.subheader("📋 Borrador Táctico")
-                    st.code(respuesta_limpia, language=None)
+                    # Usa st.text_area para el mensaje, que soporta "wrap" automático
+                    # Altura automática para que no ocupe mucho espacio
+                    st.text_area("Cuerpo del Mensaje:", value=respuesta_limpia, height=150, disabled=True, key="borrador_area")
                     
-                    import json
-                    safe_text = json.dumps(respuesta_limpia)
+                    # Inyectamos CSS para el botón nativo de Streamlit
+                    st.markdown("""
+                        <style>
+                        /* Estilo para el botón de Streamlit */
+                        .stButton>button {
+                            background-color: #00BFFF; /* Celeste Stark */
+                            color: white;
+                            border: none;
+                            padding: 15px;
+                            border-radius: 10px;
+                            width: 100%; /* Ancho completo */
+                            font-weight: bold;
+                            font-family: sans-serif;
+                            transition: 0.3s;
+                        }
+                        .stButton>button:active {
+                            transform: scale(0.98); /* Efecto de clic */
+                        }
+                        </style>
+                    """, unsafe_allow_html=True)
                     
-                    boton_copy_html = f"""
-                        <button onclick="copyToClipboard()" id="btn_stark" style="background:#FF4B4B;color:white;border:none;padding:15px;border-radius:10px;width:100%;cursor:pointer;font-weight:bold;">
-                            ⚡ COPIAR MENSAJE
-                        </button>
-                        <script>
-                        function copyToClipboard() {{
-                            const text = {safe_text};
-                            navigator.clipboard.writeText(text).then(() => {{
-                                const btn = document.getElementById('btn_stark');
-                                btn.innerText = '✅ ¡COPIADO!';
-                                btn.style.background = '#28a745';
-                            }});
-                        }}
-                        </script>
-                    """
-                    st.components.v1.html(boton_copy_html, height=80)
+                    # Usamos el botón nativo de Streamlit, que copia automáticamente
+                    st.button("COPIAR MENSAJE", key="btn_copiar_stark")
+                    
                     
 
             # --- ESTAS LÍNEAS DEBEN ESTAR ALINEADAS CON EL 'if es_redaccion' ---
