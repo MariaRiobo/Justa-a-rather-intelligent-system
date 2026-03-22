@@ -188,53 +188,46 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-# --- 3. INTERFAZ DE SALIDA ---
-       
-   
-        # --- 3. INTERFAZ DE SALIDA UNIFICADA ---
+# --- 3. INTERFAZ DE SALIDA - PROTOCOLO DE VOZ ---
         if respuesta:
-            # A. MOSTRAR VISUALMENTE
-            if es_redaccion:
-              
-                # El code block para copiar fácil
-                st.code(respuesta.strip().strip('"'), language=None, wrap_lines=True)
-                st.info("Usa el icono de la esquina para copiar.")
-            else:
-                # Si no es redacción, se muestra en el flujo normal (o puedes dejar que st.chat_message lo haga)
-                pass 
-
-            # B. GUARDADO EN HISTORIAL (Indispensable para el contexto)
+            # 1. GUARDADO (Primero lo primero)
             st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
             st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
             memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # C. PROTOCOLO DE VOZ UNIVERSAL (Aquí es donde recuperamos el habla)
-            if len(respuesta) < 700:
-                # Limpieza profunda de caracteres que "mudecen" a la IA
-                t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"")
+            # 2. PROTOCOLO DE VOZ (Limpio y directo)
+            if len(respuesta) < 800:
+                t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
-                    # Autoplay forzado para cualquier tipo de respuesta
+                    # HTML simple pero efectivo. El 'key' dinámico fuerza al navegador a notar un cambio.
+                    import time
+                    audio_id = int(time.time())
                     audio_html = f"""
-                        <div style="display:none;">
-                            <audio autoplay="true" id="stark_voice">
-                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                            </audio>
-                        </div>
+                        <audio autoplay="true" key="{audio_id}">
+                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                        </audio>
                     """
-                    st.components.v1.html(audio_html, height=0)
+                    st.markdown(audio_html, unsafe_allow_html=True)
                 except Exception as e_audio:
-                    st.warning("Módulo de voz fuera de línea temporalmente.")
+                    st.warning("Señor, el módulo de voz no responde.")
 
-            # D. CONTROL DE REFRESCO
-            # Solo refrescamos si NO es redacción, para que el cuadro de texto no parpadee
-            if not es_redaccion:
+            # 3. INTERFAZ VISUAL
+            if es_redaccion:
+                st.subheader("📋 Borrador Táctico")
+                st.code(respuesta.strip().strip('"'), language=None, wrap_lines=True)
+                st.info("👆 Copia usando el icono superior derecho.")
+                # No hacemos rerun para que el audio suene y el texto no parpadee
+            else:
+                # Si es charla normal, esperamos un segundo antes de refrescar para que el audio arranque
+                import time
+                time.sleep(1.2) # Un poco más de tiempo para asegurar la carga
                 st.rerun()
 
     except Exception as e:
         st.error(f"Falla crítica en el núcleo: {e}")
-        
 
+        
 # --- MOSTRAR CHAT ---
 for item in reversed(st.session_state.chat_history):
     autor = item.get("autor", "Desconocido")
