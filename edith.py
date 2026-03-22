@@ -204,7 +204,7 @@ if user_text or imagen_actual:
                     # El parámetro wrap_lines=True hace que el texto vaya hacia abajo.
                     st.code(respuesta_limpia, language=None, wrap_lines=True)
                     
-                    st.info("👆 Usa el icono de la esquina superior derecha del cuadro gris para copiar.")
+                   
 
             # --- GUARDADO Y VOZ (Alineación perfecta a 8 espacios) ---
             st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
