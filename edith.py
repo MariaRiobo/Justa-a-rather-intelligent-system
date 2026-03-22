@@ -145,52 +145,63 @@ with st.expander("Subir archivos"):
 
 
 
-# --- CONTROLES DE AUDIO / TEXTO ---
-audio_data = mic_recorder(start_prompt="HABLAR AHORA", stop_prompt="ESCUCHANDO...", key='recorder', just_once=True, use_container_width=True)
-
-texto_manual = st.chat_input("Escribe...")
-
 # --- PROCESAMIENTO CENTRAL ---
 user_text = None
 if audio_data:
     user_text = cerebro.transcribir_audio(audio_data['bytes'])
 elif texto_manual:
     user_text = texto_manual
-    
-# El sistema se activa si hablaste/escribiste, o si simplemente tomaste una foto
+
+# El sistema se activa si hay texto o una imagen
 if user_text or imagen_actual:
     try:
-        texto_log = user_text if user_text else "[Imagen enviada]"
+        # 1. Definimos qué decir (Prioridad a la redacción)
+        if user_text:
+            palabras_clave = ["redacta", "escribe", "mandale", "mail", "correo", "mensaje", "redactar", "whatsapp"]
+            es_redaccion = any(palabra in user_text.lower() for palabra in palabras_clave)
+
+            if es_redaccion:
+                with st.spinner("E.D.I.T.H. está preparando la pluma..."):
+                    instruccion = f"La Jefa quiere redactar algo. Contexto: {user_text}. Estilo Stark."
+                    respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
+                    
+                    # Interfaz de copiado que aparece solo cuando redacta
+                    st.subheader("📋 Borrador Táctico")
+                    st.info(respuesta)
+                    boton_copy_html = f"""
+                        <button onclick="navigator.clipboard.writeText(`{respuesta.replace('`', "'")}`)" 
+                        style="background-color: #FF4B4B; color: white; border: none; padding: 12px; 
+                        border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold;">
+                            ⚡ COPIAR AL PORTAPAPELES
+                        </button>
+                    """
+                    st.components.v1.html(boton_copy_html, height=70)
+            else:
+                # Flujo normal de charla
+                with st.spinner("E.D.I.T.H. pensando..."):
+                    respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, imagen_actual)
         
-if user_text:
-    # 1. Detectamos si es una orden de redacción
-    palabras_clave = ["redacta", "escribe", "mandale", "mail", "correo", "mensaje", "redactar", "Whatsapp"]
-    es_redaccion = any(palabra in user_text.lower() for palabra in palabras_clave)
+        elif imagen_actual:
+            # Si solo hay imagen sin texto
+            with st.spinner("Analizando imagen..."):
+                respuesta = cerebro.pensar_respuesta("¿Qué ves en esta imagen?", st.session_state.chat_history, imagen_actual)
 
-    if es_redaccion:
-        with st.spinner("E.D.I.T.H. está preparando la pluma..."):
-            instruccion_redactor = f"La Jefa quiere redactar algo. Usa este contexto: {user_text}. Genera un borrador profesional pero con estilo Stark, indicando Asunto si es mail y el cuerpo del mensaje."
-            respuesta = cerebro.pensar_respuesta(instruccion_redactor, st.session_state.chat_history, "")
-            
-            # --- INTERFAZ DE COPIADO ---
-            st.subheader("📋 Borrador Táctico")
-            st.info(respuesta)
-            
-            # El botón de "un solo toque"
-            boton_copy_html = f"""
-                <button onclick="navigator.clipboard.writeText(`{respuesta.replace('`', "'")}`)" 
-                style="background-color: #FF4B4B; color: white; border: none; padding: 12px; 
-                border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; margin-bottom: 10px;">
-                    ⚡ COPIAR AL PORTAPAPELES
-                </button>
-            """
-            st.components.v1.html(boton_copy_html, height=70)
-    
-    else:
-        # 2. Flujo normal de conversación
-        with st.spinner("E.D.I.T.H. pensando..."):
-            respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, "")
+        # 2. Guardar en historial y ejecutar voz
+        st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
+        
+        # Generar audio si no es un texto demasiado largo (opcional)
+        if len(respuesta) < 400:
+            audio_b64 = voz.generar_audio(respuesta.replace("*", ""))
+            audio_html = f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>'
+            st.markdown(audio_html, unsafe_allow_html=True)
 
+        # Solo hacemos rerun si NO es redacción, para que el botón de copiar no desaparezca
+        if user_text and not any(p in user_text.lower() for p in ["redacta", "escribe", "mail", "whatsapp"]):
+            st.rerun()
+
+    except Exception as e:
+        st.error(f"Error en el núcleo de procesamiento: {e}")
+        
     # 3. Guardamos en el historial (esto se ejecuta para ambos casos)
     st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
     
