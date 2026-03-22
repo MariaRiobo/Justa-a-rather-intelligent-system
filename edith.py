@@ -185,27 +185,7 @@ if user_text or imagen_actual:
             if es_redaccion:
                 instruccion = f"Redacta un borrador Stark para esto: {user_text}"
                 respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
-                # --- INTERCEPTOR DE ALARMAS ---
-        if respuesta and respuesta.startswith("[TIMER:"):
-            cierre = respuesta.find("]")
-            if cierre != -1:
-                tiempo_timer = int(respuesta[7:cierre])
-                respuesta = respuesta[cierre+1:].strip() # Limpiamos el texto para que no se vea el corchete
-
-                import time
-                end_time = time.time() + tiempo_timer
-
-                # Generamos HOY el audio que sonará en el FUTURO
-                with st.spinner("Sintetizando voz de alarma..."):
-                    texto_alarma = "Atención Jefa. El tiempo del temporizador ha finalizado."
-                    audio_alarma_b64 = voz.generar_audio(texto_alarma)
-
-                # Guardamos la alarma en la memoria a corto plazo
-                st.session_state.alarmas_activas.append({
-                    "end_time": end_time,
-                    "audio": audio_alarma_b64
-                })
-            
+              
             # --- PROTOCOLO DE VISIÓN REACTIVADO ---
             elif imagen_actual:
                 # 1. Definimos la orden visual (lo que el usuario quiere saber de la foto)
@@ -233,6 +213,27 @@ if user_text or imagen_actual:
                 # Mezclamos Memoria + Documentos + YouTube
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
+
+        #ALARMA
+        if respuesta and respuesta.startswith("[TIMER:"):
+            cierre = respuesta.find("]")
+            if cierre != -1:
+                tiempo_timer = int(respuesta[7:cierre])
+                respuesta = respuesta[cierre+1:].strip() # Limpiamos el texto para ocultar el código
+                
+                import time
+                end_time = time.time() + tiempo_timer
+                
+                # Generamos HOY el audio que sonará en el FUTURO
+                with st.spinner("Sintetizando voz de alarma..."):
+                    texto_alarma = "Atención Jefa. El tiempo del temporizador ha finalizado."
+                    audio_alarma_b64 = voz.generar_audio(texto_alarma)
+                
+                # Guardamos la alarma en la memoria a corto plazo
+                st.session_state.alarmas_activas.append({
+                    "end_time": end_time,
+                    "audio": audio_alarma_b64
+                })
                 
 
         # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
