@@ -164,10 +164,9 @@ if user_text or imagen_actual:
         # 1. DETECCIÓN DE REDACCIÓN O YOUTUBE
         if user_text:
             # ¿Es redacción?
-               # Detección inteligente del modo redacción
-            palabras_clave_redaccion = ["redact", "escrib", "mensaje", "correo", "mail", "borrador", "modifica", "cambia", "otra versión", "más formal", "hazlo"]
-            es_redaccion = any(palabra in user_text.lower() for palabra in palabras_clave_redaccion)
-                
+            palabras_redaccion = ["redacta", "escribe", "mandale", "mail", "correo", "mensaje", "whatsapp"]
+            es_redaccion = any(p in user_text.lower() for p in palabras_redaccion)
+            
             # ¿Es YouTube?
             match_yt = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)', user_text)
             if match_yt:
@@ -191,83 +190,49 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-# --# --- 3. INTERFAZ DE SALIDA - FLUJO OPTIMIZADO ---
+        # --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
         if respuesta:
-            
-            # A. CANAL DE REDACCIÓN (Procesamos esto ANTES de guardar en el chat)
-            if es_redaccion:
-                with st.spinner("Procesando redacción..."):
-                    # 1. Extraemos el texto limpio del proceso robótico
-                    p_limpieza = f"""Reescribe el siguiente texto para que sea un mensaje humano y directo, listo para enviar. 
-                    Reglas ESTRICTAS:
-                    1. NO incluyas tu nombre, firmas, ni análisis tácticos.
-                    2. NO uses emojis.
-                    3. NO REPITAS el mensaje. Escríbelo UNA SOLA VEZ.
-                    4. Adapta el tono al pedido.
-                    5. Devuelve ÚNICAMENTE el texto final.
-                    Texto original a transformar: {respuesta}"""
-                    
-                    borrador_limpio = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
-                    
-                    # 2. INTERCEPCIÓN TÁCTICA: Reemplazamos la respuesta larga por una muy corta para el chat y voz
-                    p_confirmacion = "El usuario pidió redactar un texto. Genera una confirmación táctica y muy breve (máximo 12 palabras) diciendo que el borrador está listo en pantalla. Sin emojis."
-                    respuesta = cerebro.pensar_respuesta(p_confirmacion, [], "").strip().strip('"').replace("**", "")
-
-            # B. GUARDADO EN HISTORIAL (Ahora guarda la confirmación corta)
+            # A. GUARDADO (Historial Limpio)
             if not st.session_state.chat_history or st.session_state.chat_history[-1]["msg"] != respuesta:
                 st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
                 st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
                 memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # C. MOSTRAR BORRADOR EN PANTALLA (Solo el cuadro gris)
+            # B. CANAL DE REDACCIÓN (Solo si pides un mensaje/correo)
             if es_redaccion:
-                st.subheader("Borrador para Enviar")
-                st.code(borrador_limpio, language=None, wrap_lines=True)
-                
+                with st.spinner("Extrayendo mensaje para enviar..."):
+                    # Filtro maestro: separa el mensaje real de la charla de EDITH
+                    p_limpieza = f"Actúa como filtro humano. Extrae SOLO el mensaje que el usuario debe enviar. Elimina 'EDITH:', introducciones de IA, reportes de seguridad y análisis táctico. Solo el texto natural: {respuesta}"
+                    borrador_limpio = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
 
-                     # C. PROTOCOLO DE VOZ (Invisible con Toque Fantasma para iOS)
+                # Mostramos el borrador en un bloque destacado
+                st.code(borrador_limpio, language=None, wrap_lines=True)
+                st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
+
+            # C. PROTOCOLO DE VOZ (TU AUDIO INTACTO ORIGINAL)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     import time
                     audio_b64 = voz.generar_audio(t_voz)
+                    placeholder_audio = st.empty()
                     id_unico = int(time.time() * 1000)
-                    
                     audio_html = f"""
-                        <audio id="audio_{id_unico}" playsinline style="display:none;">
-                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                        </audio>
-                        <script>
-                            (function() {{
-                                var audioEl = document.getElementById("audio_{id_unico}");
-                                if (!audioEl) return;
-                                
-                                // Intento 1: Reproducción automática (Funciona perfecto en PC)
-                                var promise = audioEl.play();
-                                
-                                if (promise !== undefined) {{
-                                    promise.catch(function(error) {{
-                                        // Intento 2: Si iOS lo bloquea, se activa con el primer toque en la pantalla
-                                        var unlock = function() {{
-                                            audioEl.play();
-                                            document.removeEventListener('touchstart', unlock);
-                                            document.removeEventListener('click', unlock);
-                                        }};
-                                        document.addEventListener('touchstart', unlock, {{once: true}});
-                                        document.addEventListener('click', unlock, {{once: true}});
-                                    }});
-                                }}
-                            }})();
-                        </script>
+                        <div id="wrapper_{id_unico}" style="display:none;">
+                            <audio autoplay="true" id="audio_{id_unico}">
+                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                                <script>document.getElementById("audio_{id_unico}").play();</script>
+                            </audio>
+                        </div>
                     """
-                    # Inyectamos el código directamente en la página sin componentes aislados
-                    st.markdown(audio_html, unsafe_allow_html=True)
-                    
+                    placeholder_audio.markdown(audio_html, unsafe_allow_html=True)
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
 
-        
-        
+    # Este es el bloque de cierre que causaba el fallo crítico. Ahora está alineado.
+    except Exception as e:
+        st.error(f"Error en el sistema: {e}")
+
 # --- MOSTRAR CHAT ---
 for item in reversed(st.session_state.chat_history):
     autor = item.get("autor", "Desconocido")
