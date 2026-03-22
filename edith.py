@@ -190,35 +190,41 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-# --- 3. INTERFAZ DE SALIDA - PROTOCOLO REESTRUCTURADO ---
+# --# --- 3. INTERFAZ DE SALIDA - FLUJO OPTIMIZADO ---
         if respuesta:
-            # A. GUARDADO (Historial Limpio)
+            
+            # A. CANAL DE REDACCIÓN (Procesamos esto ANTES de guardar en el chat)
+            if es_redaccion:
+                with st.spinner("Procesando redacción..."):
+                    # 1. Extraemos el texto limpio del proceso robótico
+                    p_limpieza = f"""Reescribe el siguiente texto para que sea un mensaje humano y directo, listo para enviar. 
+                    Reglas ESTRICTAS:
+                    1. NO incluyas tu nombre, firmas, ni análisis tácticos.
+                    2. NO uses emojis.
+                    3. NO REPITAS el mensaje. Escríbelo UNA SOLA VEZ.
+                    4. Adapta el tono al pedido.
+                    5. Devuelve ÚNICAMENTE el texto final.
+                    Texto original a transformar: {respuesta}"""
+                    
+                    borrador_limpio = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
+                    
+                    # 2. INTERCEPCIÓN TÁCTICA: Reemplazamos la respuesta larga por una muy corta para el chat y voz
+                    p_confirmacion = "El usuario pidió redactar un texto. Genera una confirmación táctica y muy breve (máximo 12 palabras) diciendo que el borrador está listo en pantalla. Sin emojis."
+                    respuesta = cerebro.pensar_respuesta(p_confirmacion, [], "").strip().strip('"').replace("**", "")
+
+            # B. GUARDADO EN HISTORIAL (Ahora guarda la confirmación corta)
             if not st.session_state.chat_history or st.session_state.chat_history[-1]["msg"] != respuesta:
                 st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
                 st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
                 memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-           # B. CANAL DE REDACCIÓN (Natural y Sin Duplicados)
+            # C. MOSTRAR BORRADOR EN PANTALLA (Solo el cuadro gris)
             if es_redaccion:
-                with st.spinner("Redactando borrador..."):
-                    p_limpieza = f"""Reescribe el siguiente texto para que sea un mensaje humano, natural y directo, listo para copiar y enviar. 
-                    Reglas ESTRICTAS:
-                    1. NO incluyas tu nombre (EDITH), firmas, ni análisis tácticos.
-                    2. NO uses emojis bajo ninguna circunstancia.
-                    3. NO REPITAS el mensaje. Escríbelo UNA SOLA VEZ.
-                    4. Adapta el tono al pedido original (ej. si es para WhatsApp, que sea corto, casual y relajado).
-                    5. Devuelve ÚNICAMENTE el texto final, sin comillas, sin introducciones y sin títulos.
-                    Texto original a transformar: {respuesta}"""
-                    
-                    borrador_limpio = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
+                st.subheader("Borrador para Enviar")
+                st.code(borrador_limpio, language=None, wrap_lines=True)
                 
 
-                # Mostramos el borrador en un bloque destacado
-               
-                st.code(borrador_limpio, language=None, wrap_lines=True)
-                st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
-
-         # C. PROTOCOLO DE VOZ (Estabilizado con Components)
+         # D. PROTOCOLO DE VOZ (Estabilizado con Components)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
