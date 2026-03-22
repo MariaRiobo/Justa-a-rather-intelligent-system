@@ -46,36 +46,34 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         hora_actual_formato = ahora.strftime("%H:%M:%S") # Incluimos segundos para precisión
         
         # 2. Le pasamos la HORA ACTUAL como una orden absoluta
+        # PROMPT HÍBRIDO: Entiende horas fijas e intervalos
         prompt_t = f"""
         SISTEMA DE TIEMPO STARK.
         HORA ACTUAL: {hora_actual_formato}
         SOLICITUD: "{texto_usuario}"
         
-        TAREA: Calcula cuántos segundos faltan desde la HORA ACTUAL hasta la hora pedida.
-        - Si piden "a las 17:45" y son las 17:43:00, faltan 120 segundos.
-        - Responde SOLO el número entre corchetes. Ejemplo: [120]
+        INSTRUCCIONES:
+        1. Si pide una hora fija (ej: "a las 18:00"), calcula los segundos que faltan desde {hora_actual_formato}.
+        2. Si pide un intervalo (ej: "10 segundos" o "5 minutos"), conviértelo directamente a segundos.
+        3. Responde SOLO el número entre corchetes. Ejemplo: [10] o [300].
         """
         
         try:
             res_t = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt_t}],
                 model="llama-3.1-8b-instant",
-                temperature=0 # Temperatura 0 para que no invente números
+                temperature=0
             )
             resultado_ia = res_t.choices[0].message.content
             match = re.search(r"\[(\d+)\]", resultado_ia)
             segundos = int(match.group(1)) if match else 0
             
             if segundos > 0:
-                # Extraemos la hora que pidió el usuario para confirmársela
-                hora_pedida = re.search(r"(\d{1,2}:\d{2})", texto_usuario)
-                confirmacion = hora_pedida.group(1) if hora_pedida else "la hora solicitada"
-                
-                return f"[TIMER:{segundos}] Entendido. Alarma configurada para {confirmacion}."
+                return f"[TIMER:{segundos}] Entendido, Francis. Temporizador activo por {segundos} segundos."
             else:
-                return "Jefa, esa hora ya pasó o el cálculo falló. Intente decir 'en 5 minutos'."
+                return "Jefa, no pude procesar el tiempo solicitado."
         except:
-            return "Error en la sincronización del cronómetro."
+            return "Error en los sensores de tiempo."
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
     
