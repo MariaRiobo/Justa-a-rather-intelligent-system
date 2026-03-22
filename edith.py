@@ -39,6 +39,7 @@ st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
 st.markdown(CSS_STARK, unsafe_allow_html=True)
 # Altavoz de EDITH (Posición fija)
 placeholder_audio = st.empty()
+audio_placeholder = st.empty()
 
 # 👇 ESTA ES LA ÚNICA VEZ QUE DIBUJAMOS EL ORBE Y EL TÍTULO 👇
 st.markdown("""
@@ -209,27 +210,20 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-# C. PROTOCOLO DE VOZ (Táctica Híbrida: PC Invisible / Móvil Visible)
+# C. PROTOCOLO DE VOZ (Arquitectura del Viernes Restaurada)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
+                    st.session_state.audio_key += 1
                     
-                    # CSS Adaptativo: Oculta el audio SOLO en computadoras. 
-                    # En móviles lo deja visible para que puedas darle Play si el teléfono lo bloquea.
-                    st.markdown(
-                        """
-                        <style>
-                            @media only screen and (min-width: 768px) {
-                                audio { display: none !important; }
-                            }
-                        </style>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    
-                    # Reproductor oficial de Streamlit
-                    st.audio(f"data:audio/mpeg;base64,{audio_b64}", format="audio/mpeg", autoplay=True)
+                    audio_html = f"""
+                        <audio autoplay="true" key="{st.session_state.audio_key}" style="display:none;">
+                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                        </audio>
+                    """
+                    # Usamos el placeholder para sobreescribir el audio anterior y evitar repeticiones
+                    audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
