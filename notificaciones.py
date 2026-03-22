@@ -1,24 +1,26 @@
 import requests
-
-# --- CREDENCIALES PUSHOVER ---
-user_key = "TU_USER_KEY_REAL"
-api_token = "TU_API_TOKEN_REAL"
+import streamlit as st
 
 def enviar_pushover(mensaje, titulo="E.D.I.T.H. - Alerta"):
-    """Envía una notificación push inmediata al iPhone."""
+    """Envía una notificación push usando credenciales seguras."""
+    
+    # Extraemos las llaves de forma segura desde los Secrets de Streamlit
+    user_key = st.secrets["pushover"]["user_key"]
+    api_token = st.secrets["pushover"]["api_token"]
+    
     url = "https://api.pushover.net/1/messages.json"
     data = {
-        "token": API_TOKEN,
-        "user": USER_KEY,
+        "token": api_token,
+        "user": user_key,
         "message": mensaje,
         "title": titulo,
-        "sound": "shimmer",  # Puedes probar con: 'intermission', 'magic', o 'alien'
-        "priority": 1        # Prioridad alta para que salte en el iPhone
+        "sound": "shimmer",
+        "priority": 1
     }
     
     try:
         response = requests.post(url, data=data, timeout=7)
         return response.ok
     except Exception as e:
-        print(f"Fallo en el enlace de Pushover: {e}")
+        print(f"Fallo en el enlace de seguridad: {e}")
         return False
