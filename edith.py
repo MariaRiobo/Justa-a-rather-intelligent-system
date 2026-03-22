@@ -210,20 +210,20 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-# C. PROTOCOLO DE VOZ (Viernes Restaurado + Bypass Móvil)
+# C. PROTOCOLO DE VOZ (Invisibilidad Táctica - PC y Móvil)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
                     st.session_state.audio_key += 1
                     
-                    # 1. PURGA TÁCTICA: Vaciamos el contenedor antes de inyectar el nuevo audio.
-                    # Esto evita que el navegador móvil colapse por exceso de memoria oculta.
+                    # Limpiamos el rastro anterior para forzar al celular a leerlo como un audio nuevo
                     audio_placeholder.empty()
                     
-                    # 2. INYECCIÓN: Usamos playsinline (vital para iOS) y preload
+                    # EL TRUCO: No usamos "display: none". Lo hacemos de 0x0 píxeles y transparente.
+                    # Apple cree que el reproductor está visible en la pantalla y lo deja sonar.
                     audio_html = f"""
-                        <audio id="voz_{st.session_state.audio_key}" autoplay="autoplay" playsinline preload="auto" style="display: none !important;">
+                        <audio autoplay="true" playsinline style="position: absolute; width: 0px; height: 0px; opacity: 0;">
                             <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
                         </audio>
                     """
@@ -231,7 +231,7 @@ if user_text or imagen_actual:
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
-
+                    
     # Este except cierra el bloque try principal de procesamiento
     except Exception as e:
         st.error(f"Error en el sistema: {e}")
