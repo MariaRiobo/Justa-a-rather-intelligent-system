@@ -190,11 +190,67 @@ if user_text or imagen_actual:
 
         # 3. INTERFAZ DE SALIDA
         if respuesta:
-            if es_redaccion:
-                st.info("Borrador")
-                st.info(respuesta)
-                boton_copy = f"""<button onclick="navigator.clipboard.writeText(`{respuesta.replace('`','')} `)" style="background:#FF4B4B;color:white;border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold;">⚡ COPIAR AL PORTAPAPELES</button>"""
-                st.components.v1.html(boton_copy, height=70)
+           if es_redaccion:
+                with st.spinner("E.D.I.T.H. está preparando la pluma..."):
+                    # Prompt reforzado para evitar que incluya nombres de usuario o firmas extrañas
+                    instruccion = f"""
+                    Actúa como redactor. Genera UN BORRADOR para: {user_text}.
+                    REGLA DE ORO: Devuelve ÚNICAMENTE el texto del mensaje, sin introducciones, sin comillas iniciales, y sin decir 'Borrador:' o 'Francis:'. 
+                    Usa un estilo Stark elegante.
+                    """
+                    respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
+                    
+                    # Limpieza extra por si la IA se pone creativa
+                    respuesta_limpia = respuesta.strip().strip('"').strip("'")
+                    
+                    st.subheader("📋 Borrador Táctico")
+                    # Usamos st.code porque permite copiar manualmente si el botón falla, y se ve más limpio
+                    st.code(respuesta_limpia, language=None)
+                    
+                    # Botón de Copiado con "Safe String" para JavaScript
+                    # Usamos json.dumps para que las comillas y saltos de línea no rompan el script
+                    import json
+                    safe_text = json.dumps(respuesta_limpia)
+                    
+                    boton_copy_html = f"""
+                        <div id="copy_container">
+                            <button onclick="copyToClipboard()" id="btn_stark">
+                                ⚡ COPIAR MENSAJE
+                            </button>
+                        </div>
+
+                        <script>
+                        function copyToClipboard() {{
+                            const text = {safe_text};
+                            navigator.clipboard.writeText(text).then(() => {{
+                                const btn = document.getElementById('btn_stark');
+                                btn.innerText = '✅ ¡COPIADO!';
+                                btn.style.background = '#28a745';
+                            }}).catch(err => {{
+                                console.error('Error al copiar: ', err);
+                            }});
+                        }}
+                        </script>
+
+                        <style>
+                            #btn_stark {{
+                                background-color: #FF4B4B;
+                                color: white;
+                                border: none;
+                                padding: 15px;
+                                border-radius: 10px;
+                                width: 100%;
+                                cursor: pointer;
+                                font-weight: bold;
+                                font-family: sans-serif;
+                                transition: 0.3s;
+                            }}
+                            #btn_stark:active {{
+                                transform: scale(0.98);
+                            }}
+                        </style>
+                    """
+                    st.components.v1.html(boton_copy_html, height=80)
             
             # Guardar en Historial y Memoria
             st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
