@@ -209,7 +209,7 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-     # C. PROTOCOLO DE VOZ (Estabilizado para PC y iPhone - Sin iframes)
+   # C. PROTOCOLO DE VOZ (Estabilizado para PC y iPhone - Sin iframes)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
@@ -250,10 +250,10 @@ if user_text or imagen_actual:
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
-            except Exception as e:
-                st.error(f"Error en el sistema: {e}")
-        
-        
+
+    # Este except cierra el bloque try principal de procesamiento
+    except Exception as e:
+        st.error(f"Error en el sistema: {e}")
 
 
 # --- MOSTRAR CHAT ---
