@@ -8,33 +8,32 @@ import pytz
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def extraer_segundos(texto_usuario):
+    # 1. Obtenemos la hora exacta de Argentina AHORA
     zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
-    hora_actual = datetime.now(zona_horaria)
-    hora_str = hora_actual.strftime('%H:%M:%S')
+    ahora = datetime.now(zona_horaria)
+    hora_actual_str = ahora.strftime("%H:%M")
     
+    # 2. Le damos contexto total a la IA
     prompt = f"""
-    Calcula cuántos SEGUNDOS faltan desde la hora actual ({hora_str}) hasta lo que pide el usuario. Si pide una hora fija, resta la hora actual de esa hora.
-    Usuario: "{texto_usuario}"
-    Responde ÚNICAMENTE con el número final entre corchetes. Ejemplo: [300]. Nada más.
+    Eres un calculador de tiempo preciso.
+    HORA ACTUAL: {hora_actual_str}
+    SOLICITUD DEL USUARIO: "{texto_usuario}"
+    
+    TAREA: Calcula cuántos SEGUNDOS faltan desde la HORA ACTUAL hasta lo que pide el usuario.
+    - Si pide "en 5 minutos", responde [300].
+    - Si pide "a las 17:14" y son las 17:10, faltan 4 minutos, responde [240].
+    
+    RESPONDE ÚNICAMENTE EL NÚMERO ENTRE CORCHETES, EJEMPLO: [60]
     """
+    
     try:
         res = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-8b-instant", # <--- Volvemos al reactor rápido que NO se agota
-            temperature=0,
-            max_tokens=10
+            model="llama-3.1-8b-instant", # Rápido y confiable
+            temperature=0
         )
         respuesta = res.choices[0].message.content.strip()
-        
-        # Cazamos el número entre corchetes
         match = re.search(r'\[(\d+)\]', respuesta)
-        if match:
-            return int(match.group(1))
-        
-        # Plan de emergencia
-        numeros = re.findall(r'\d+', respuesta)
-        if numeros:
-            return int(numeros[-1]) 
-        return 0
-    except Exception:
+        return int(match.group(1)) if match else 0
+    except:
         return 0
