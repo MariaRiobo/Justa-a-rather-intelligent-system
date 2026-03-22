@@ -209,30 +209,25 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-       # C. PROTOCOLO DE VOZ (Estabilizado con Components)
+      # C. PROTOCOLO DE VOZ (Viernes Restaurado - 100% Invisible)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
-                    import time
                     audio_b64 = voz.generar_audio(t_voz)
-                    id_unico = int(time.time() * 1000)
+                    st.session_state.audio_key += 1
                     
+                    # Sin 'controls' y con display:none forzado para invisibilidad total
                     audio_html = f"""
-                        <div style="display:none;">
-                            <audio autoplay="true" id="audio_{id_unico}">
-                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                            </audio>
-                            <script>
-                                var a = document.getElementById("audio_{id_unico}");
-                                if(a) a.play().catch(function(e){{console.log("Audio bloqueado");}});
-                            </script>
-                        </div>
+                        <audio id="voz_{st.session_state.audio_key}" autoplay="true" style="display: none !important;">
+                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                        </audio>
                     """
-                    # Inyectamos el audio como un componente independiente, igual que en el saludo inicial
-                    st.components.v1.html(audio_html, height=0)
+                    # Sobreescribimos el placeholder para evitar repeticiones
+                    audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
+                    
     except Exception as e:
         st.error(f"Error en el sistema: {e}")
         
