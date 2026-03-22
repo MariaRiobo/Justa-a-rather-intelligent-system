@@ -215,22 +215,24 @@ if user_text or imagen_actual:
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
         #ALARMA
-       # 1. Detectamos si la respuesta trae un TIMER
+      # --- ALARMA POR VOZ (SIn Cartel) ---
         match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
         
         if match_timer:
-            segundos_falsos = int(match_timer.group(1))
-            # Limpiamos el texto para el chat
+            segundos_reales = int(match_timer.group(1))
             respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
             
-            # Inyectamos el JavaScript (Corregido sin la llave extra)
+            # Generamos el audio del aviso final de antemano
+            aviso_texto = "Jefa, el tiempo programado ha finalizado."
+            audio_aviso_b64 = voz.generar_audio(aviso_texto)
+            
+            # Inyectamos el JS que solo reproduce el audio (Sin Alert)
             st.components.v1.html(f"""
                 <script>
                     setTimeout(function() {{
-                        var audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+                        var audio = new Audio("data:audio/mpeg;base64,{audio_aviso_b64}");
                         audio.play();
-                        alert("¡JEFA, EL TIEMPO HA EXPIRADO!");
-                    }}, {segundos_falsos * 1000});
+                    }}, {segundos_reales * 1000});
                 </script>
             """, height=0)
 
