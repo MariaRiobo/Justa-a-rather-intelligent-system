@@ -34,23 +34,24 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             datos_extra = herramientas.buscar_en_internet(texto_usuario)
             
   # PRIORIDAD 5: Temporizador Táctico
+  
     elif any(w in texto_min for w in ["alarma", "temporizador", "avísame", "avisame", "timer"]):
-        with st.spinner("Sincronizando cronómetro táctico..."):
-            segundos = temporizador.extraer_segundos(texto_usuario)
+        with st.spinner("Sincronizando cronómetro..."):
+            # Usamos el módulo herramientas para calcular los segundos
+            segundos = herramientas.extraer_segundos(texto_usuario)
             
             if segundos > 0:
                 from datetime import datetime, timedelta
                 import pytz
                 
-                zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
-                # Calculamos el momento exacto en que debe sonar
-                hora_futura = datetime.now(zona_horaria) + timedelta(seconds=segundos)
-                hora_formateada = hora_futura.strftime('%H:%M')
+                zona = pytz.timezone('America/Argentina/Buenos_Aires')
+                hora_final = datetime.now(zona) + timedelta(seconds=segundos)
+                confirmacion = hora_final.strftime("%H:%M")
                 
-                # El comando [TIMER:X] es lo que activa el sonido en el frontend
-                return f"[TIMER:{segundos}] Alarma puesta para las {hora_formateada}."
+                # IMPORTANTE: El formato [TIMER:X] debe ir al inicio para que edith.py lo detecte
+                return f"[TIMER:{segundos}] Entendido. Alarma configurada para las {confirmacion}."
             else:
-                return "Jefa, no pude hacerlo"
+                return "jEFA, NO PUDE HACERLO
 
    # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     contexto_inyectado = SYSTEM_PROMPT
