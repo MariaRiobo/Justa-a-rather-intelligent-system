@@ -207,24 +207,38 @@ if user_text or imagen_actual:
                 st.code(borrador_final, language=None, wrap_lines=True)
                 st.info("Usa el icono de arriba a la derecha para copiar.")
 
-            # C. PROTOCOLO DE VOZ (Con ID dinámico para evitar bloqueos)
+          # C. PROTOCOLO DE VOZ (Sistema de Inyección Forzada)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     import time
                     audio_b64 = voz.generar_audio(t_voz)
-                    # El 'key' y el ID único obligan al navegador a tratarlo como un archivo nuevo
-                    id_transmision = int(time.time())
+                    
+                    # 1. Creamos un espacio único en la interfaz
+                    placeholder_audio = st.empty()
+                    
+                    # 2. Generamos un ID que cambia cada milisegundo
+                    id_unico = int(time.time() * 1000)
+                    
+                    # 3. Inyectamos el HTML con una clave única para forzar el refresco del navegador
                     audio_html = f"""
-                        <div id="stark_audio_{id_transmision}">
-                            <audio autoplay="true" cache="none">
+                        <div id="wrapper_{id_unico}" style="display:none;">
+                            <audio autoplay="true" id="audio_{id_unico}">
                                 <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                                <script>
+                                    // Forzamos la reproducción manual por si el autoplay falla
+                                    document.getElementById("audio_{id_unico}").play();
+                                </script>
                             </audio>
                         </div>
                     """
-                    st.markdown(audio_html, unsafe_allow_html=True)
+                    
+                    # 4. Limpiamos cualquier audio viejo y ponemos el nuevo
+                    placeholder_audio.markdown(audio_html, unsafe_allow_html=True)
+                    
                 except Exception as e_voz:
-                    st.error(f"Error en comunicación de voz: {e_voz}")
+                    st.error(f"Fallo en enlace de voz: {e_voz}")
+                    
                     
 
             # NOTA: Hemos eliminado st.rerun() y time.sleep(). 
