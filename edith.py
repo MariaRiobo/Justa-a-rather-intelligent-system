@@ -209,23 +209,26 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
- # C. PROTOCOLO DE VOZ (Nativo y Oculto - El definitivo)
+# C. PROTOCOLO DE VOZ (Táctica Híbrida: PC Invisible / Móvil Visible)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
                     
-                    # 1. Ocultamos cualquier reproductor de audio con CSS para mantener tu interfaz limpia
+                    # CSS Adaptativo: Oculta el audio SOLO en computadoras. 
+                    # En móviles lo deja visible para que puedas darle Play si el teléfono lo bloquea.
                     st.markdown(
                         """
                         <style>
-                            audio { display: none !important; }
+                            @media only screen and (min-width: 768px) {
+                                audio { display: none !important; }
+                            }
                         </style>
                         """,
                         unsafe_allow_html=True
                     )
                     
-                    # 2. Reproductor oficial de Streamlit. Sin iframes, sin scripts bloqueados.
+                    # Reproductor oficial de Streamlit
                     st.audio(f"data:audio/mpeg;base64,{audio_b64}", format="audio/mpeg", autoplay=True)
                     
                 except Exception as e_voz:
