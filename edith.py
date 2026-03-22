@@ -198,25 +198,23 @@ if user_text or imagen_actual:
                 st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
                 memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # B. CANAL DE REDACCIÓN (Refinado y Profesional)
+           # B. CANAL DE REDACCIÓN (Natural y Sin Duplicados)
             if es_redaccion:
-                with st.spinner("Refinando redacción..."):
-                    # Prompt avanzado para mejorar la calidad del texto
-                    p_limpieza = (
-                        "Actúa como un redactor experto en comunicación humana. "
-                        "Tu tarea es convertir el siguiente contenido en un mensaje listo para enviar. "
-                        "Reglas estrictas: "
-                        "1. Elimina cualquier mención a protocolos, seguridad o nombres de IA. "
-                        "2. No uses emojis ni etiquetas visuales. "
-                        "3. Corrige la puntuación y mejora la fluidez del lenguaje. "
-                        "4. El tono debe ser natural pero profesional. "
-                        "5. Entrega SOLAMENTE el cuerpo del mensaje. "
-                        f"Texto original: {respuesta}"
-                    )
+                with st.spinner("Redactando borrador..."):
+                    p_limpieza = f"""Reescribe el siguiente texto para que sea un mensaje humano, natural y directo, listo para copiar y enviar. 
+                    Reglas ESTRICTAS:
+                    1. NO incluyas tu nombre (EDITH), firmas, ni análisis tácticos.
+                    2. NO uses emojis bajo ninguna circunstancia.
+                    3. NO REPITAS el mensaje. Escríbelo UNA SOLA VEZ.
+                    4. Adapta el tono al pedido original (ej. si es para WhatsApp, que sea corto, casual y relajado).
+                    5. Devuelve ÚNICAMENTE el texto final, sin comillas, sin introducciones y sin títulos.
+                    Texto original a transformar: {respuesta}"""
+                    
                     borrador_limpio = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
 
                 st.subheader("Borrador para Enviar")
                 st.code(borrador_limpio, language=None, wrap_lines=True)
+                st.info("Copia el texto de arriba. EDITH te dará el reporte por voz.")
                 
 
                 # Mostramos el borrador en un bloque destacado
