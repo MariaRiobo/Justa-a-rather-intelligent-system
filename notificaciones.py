@@ -13,12 +13,12 @@ def enviar_pushover(mensaje, titulo="E.D.I.T.H.", sonido="shimmer"):
     url = "https://api.pushover.net/1/messages.json"
     
     data = {
-        "token": api_token,
-        "user": user_key,
-        "message": mensaje,
-        "title": titulo,
-        "sound": siren, # Aquí va el nombre del sonido
-        "priority": 1
-    }
-    
+            "token": api_token,
+            "user": user_key,
+            "message": mensaje,
+            "title": titulo,
+            "sound": "siren",    # <-- REVISÁ ESTA LÍNEA: Dos puntos, comillas y COMA al final
+            "priority": 1
+        }
+        
     requests.post(url, data=data, timeout=7)
