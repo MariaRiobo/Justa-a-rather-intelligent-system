@@ -234,7 +234,8 @@ if user_text or imagen_actual:
                 import time
         
                 def aviso_final_iphone():
-                    time.sleep(segundos_reales)
+                    tiempo_real_de_espera = max(0, segundos_reales - 3) 
+                    time.sleep(tiempo_real_de_espera)
                     notificaciones.enviar_pushover(
                         mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
                         titulo="ALERTA CRÍTICA",
@@ -253,12 +254,12 @@ if user_text or imagen_actual:
                     T-MINUS: <span id="timer_display">{segundos_reales}</span>s
                 </div>
                 <script>
-                    // 1. Hora de finalización calculada una sola vez
-                    var endTime = Date.now() + ({segundos_reales} * 1000);
+                    // Ajustamos el tiempo final restando los 3 segundos de "arranque"
+                    var compensacion = 3;
+                    var endTime = Date.now() + (({segundos_reales} - compensacion) * 1000);
                     var display = document.getElementById('timer_display');
                     
                     var countdown = setInterval(function() {{
-                        // Usamos doble llave {{ }} para que Python las ignore
                         var now = Date.now();
                         var timeLeft = Math.round((endTime - now) / 1000);
                         
