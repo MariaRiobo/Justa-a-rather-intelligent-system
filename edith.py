@@ -210,20 +210,19 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-# C. PROTOCOLO DE VOZ (Invisibilidad Táctica - PC y Móvil)
+# C. PROTOCOLO DE VOZ (Código exacto del Viernes - Invisibilidad Natural)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
                     st.session_state.audio_key += 1
                     
-                    # Limpiamos el rastro anterior para forzar al celular a leerlo como un audio nuevo
+                    # Vaciamos el contenedor primero (limpieza de RAM móvil)
                     audio_placeholder.empty()
                     
-                    # EL TRUCO: No usamos "display: none". Lo hacemos de 0x0 píxeles y transparente.
-                    # Apple cree que el reproductor está visible en la pantalla y lo deja sonar.
+                    # El HTML puro de tu viernes: Sin 'controls' (invisible por defecto), sin CSS sospechoso.
                     audio_html = f"""
-                        <audio autoplay="true" playsinline style="position: absolute; width: 0px; height: 0px; opacity: 0;">
+                        <audio autoplay="true" key="{st.session_state.audio_key}">
                             <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
                         </audio>
                     """
@@ -231,6 +230,7 @@ if user_text or imagen_actual:
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
+
                     
     # Este except cierra el bloque try principal de procesamiento
     except Exception as e:
