@@ -209,20 +209,28 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-                        # C. PROTOCOLO DE VOZ (El original que funcionaba al 100%)
+                                   # C. PROTOCOLO DE VOZ (Estable y sin repeticiones)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
-                    import streamlit.components.v1 as components
+                    import time
                     audio_b64 = voz.generar_audio(t_voz)
+                    id_unico = f"audio_{int(time.time() * 1000)}"
                     
-                    audio_html = f"""
-                        <audio autoplay="true">
-                            <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                        </audio>
-                    """
-                    # Usamos components.html con height=0 para que sea invisible pero se ejecute siempre
-                    components.html(audio_html, height=0)
+                    # 1. Inyectamos CSS para ocultar el reproductor nativo
+                    st.markdown(
+                        """
+                        <style>
+                            audio {
+                                display: none !important;
+                            }
+                        </style>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                    
+                    # 2. Creamos el audio nativo de Streamlit (esto evita que se guarde mal en el historial)
+                    st.audio(f"data:audio/mpeg;base64,{audio_b64}", format="audio/mpeg", autoplay=True)
                     
                 except Exception as e_voz:
                     st.error(f"Fallo en enlace de voz: {e_voz}")
