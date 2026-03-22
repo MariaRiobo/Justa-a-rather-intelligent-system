@@ -211,10 +211,6 @@ if user_text or imagen_actual:
                     Texto original a transformar: {respuesta}"""
                     
                     borrador_limpio = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
-
-                st.subheader("Borrador para Enviar")
-                st.code(borrador_limpio, language=None, wrap_lines=True)
-                st.info("Copia el texto de arriba. EDITH te dará el reporte por voz.")
                 
 
                 # Mostramos el borrador en un bloque destacado
