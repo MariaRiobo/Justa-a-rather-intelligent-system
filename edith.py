@@ -210,19 +210,23 @@ if user_text or imagen_actual:
                 st.code(borrador_limpio, language=None, wrap_lines=True)
                 st.info("Copia el texto de arriba. EDITH te dará el reporte táctico por voz.")
 
-# C. PROTOCOLO DE VOZ (Arquitectura del Viernes Restaurada)
+# C. PROTOCOLO DE VOZ (Viernes Restaurado + Bypass Móvil)
             if len(respuesta) < 800:
                 t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
                 try:
                     audio_b64 = voz.generar_audio(t_voz)
                     st.session_state.audio_key += 1
                     
+                    # 1. PURGA TÁCTICA: Vaciamos el contenedor antes de inyectar el nuevo audio.
+                    # Esto evita que el navegador móvil colapse por exceso de memoria oculta.
+                    audio_placeholder.empty()
+                    
+                    # 2. INYECCIÓN: Usamos playsinline (vital para iOS) y preload
                     audio_html = f"""
-                        <audio autoplay="true" key="{st.session_state.audio_key}" style="display:none;">
+                        <audio id="voz_{st.session_state.audio_key}" autoplay="autoplay" playsinline preload="auto" style="display: none !important;">
                             <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
                         </audio>
                     """
-                    # Usamos el placeholder para sobreescribir el audio anterior y evitar repeticiones
                     audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
                     
                 except Exception as e_voz:
