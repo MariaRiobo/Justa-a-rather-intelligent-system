@@ -188,64 +188,58 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
 
-# --- 3. INTERFAZ DE SALIDA - PROTOCOLO ESTABLE ---
+# --- 3. INTERFAZ DE SALIDA (RECONSTRUIDA) ---
         if respuesta:
-            # A. GUARDADO (Evitamos duplicados verificando el último mensaje)
+            # A. GUARDADO SIN DUPLICADOS
             if not st.session_state.chat_history or st.session_state.chat_history[-1]["msg"] != respuesta:
                 st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
                 st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
                 memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            # B. PROCESAMIENTO VISUAL (Solo para Redacción)
+            # B. LÓGICA DE REDACCIÓN (Solo si es mensaje para copiar)
             if es_redaccion:
-                with st.spinner("Limpiando borrador..."):
-                    prompt_limpieza = f"ESTRICTO: Reescribe esto para que sea UN SOLO PÁRRAFO de texto natural. Elimina 'Borrador:', 'Firma:', 'Mensaje para:', asteriscos y negritas. Solo el contenido para enviar: {respuesta}"
-                    borrador_final = cerebro.pensar_respuesta(prompt_limpieza, [], "")
-                    borrador_final = borrador_final.strip().strip('"').replace("**", "")
-
+                with st.spinner("Refinando mensaje..."):
+                    p_limpieza = f"Actúa como redactor. Responde SOLO el texto para enviar, sin etiquetas como 'EDITH:' o 'Borrador:'. Texto: {respuesta}"
+                    borrador_final = cerebro.pensar_respuesta(p_limpieza, [], "").strip().strip('"').replace("**", "")
                 
+             
                 st.code(borrador_final, language=None, wrap_lines=True)
-                st.info("Usa el icono de arriba a la derecha para copiar.")
+                st.info("Copia usando el icono de arriba a la derecha.")
 
-          # C. PROTOCOLO DE VOZ (Sistema de Inyección Forzada)
-            if len(respuesta) < 800:
-                t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
+            # C. PROTOCOLO DE VOZ (La clave para que no se corte)
+            if len(respuesta) < 900:
+                t_voz = respuesta.replace("EDITH:", "").replace("Francis:", "")
+                t_voz = t_voz.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"").replace("'","")
+                
                 try:
                     import time
-                    audio_b64 = voz.generar_audio(t_voz)
+                    audio_b64 = voz.generar_audio(t_voz.strip())
+                    id_aud = int(time.time() * 1000)
                     
-                    # 1. Creamos un espacio único en la interfaz
+                    # Usamos un placeholder local para no mover nada de arriba
                     placeholder_audio = st.empty()
-                    
-                    # 2. Generamos un ID que cambia cada milisegundo
-                    id_unico = int(time.time() * 1000)
-                    
-                    # 3. Inyectamos el HTML con una clave única para forzar el refresco del navegador
                     audio_html = f"""
-                        <div id="wrapper_{id_unico}" style="display:none;">
-                            <audio autoplay="true" id="audio_{id_unico}">
+                        <div id="voicewrap_{id_aud}" style="display:none;">
+                            <audio autoplay="true" id="player_{id_aud}">
                                 <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
-                                <script>
-                                    // Forzamos la reproducción manual por si el autoplay falla
-                                    document.getElementById("audio_{id_unico}").play();
-                                </script>
                             </audio>
+                            <script>
+                                var audio = document.getElementById("player_{id_aud}");
+                                if(audio) {{
+                                    audio.play().catch(function(e) {{ console.log("Bloqueado"); }});
+                                }}
+                            </script>
                         </div>
                     """
-                    
-                    # 4. Limpiamos cualquier audio viejo y ponemos el nuevo
                     placeholder_audio.markdown(audio_html, unsafe_allow_html=True)
-                    
-                except Exception as e_voz:
-                    st.error(f"Fallo en enlace de voz: {e_voz}")
-                    
-                    
-
-            # NOTA: Hemos eliminado st.rerun() y time.sleep(). 
-            # Esto evita el titileo y permite que el audio suene completo.
+                except:
+                    pass
+            
+            # --- NOTA IMPORTANTE: Quitamos st.rerun() para que el audio no se corte ---
 
     except Exception as e:
-        st.error(f"Falla crítica en el núcleo: {e}")
+        st.error(f"Falla crítica: {e}")
+        
         
         
 # --- MOSTRAR CHAT ---
