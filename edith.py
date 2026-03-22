@@ -190,38 +190,23 @@ if user_text or imagen_actual:
 
 # --- 3. INTERFAZ DE SALIDA ---
        
+   
         if respuesta:
             if es_redaccion:
                 with st.spinner("E.D.I.T.H. está preparando la pluma..."):
-                    instruccion = f"Actúa como redactor Stark. Genera UN BORRADOR para: {user_text}. REGLA DE ORO: Devuelve ÚNICAMENTE el texto del mensaje, sin introducciones ni comillas. Estilo Stark."
+                    instruccion = f"Genera un borrador profesional/Stark para: {user_text}. REGLA: Solo el cuerpo del mensaje, sin nombres ni comillas."
                     respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
                     respuesta_limpia = respuesta.strip().strip('"').strip("'")
                     
-                 
+              
                     
-                    # 1. El text_area permite el "wrap" automático (el texto va hacia abajo)
-                    # Nota: El usuario puede copiar directamente desde aquí con el icono nativo
-                    st.text_area("Mensaje para copiar:", value=respuesta_limpia, height=150, key="copy_area_final")
+                    # El componente 'st.code' tiene el botón de copiar que NUNCA falla.
+                    # El parámetro wrap_lines=True hace que el texto vaya hacia abajo.
+                    st.code(respuesta_limpia, language=None, wrap_lines=True)
                     
-                    # 2. Botón Celeste Stark Estético
-                    st.markdown("""
-                        <style>
-                        div.stButton > button:first-child {
-                            background-color: #00BFFF !important;
-                            color: white !important;
-                            border-radius: 10px;
-                            width: 100%;
-                            height: 50px;
-                            font-weight: bold;
-                            border: none;
-                        }
-                        </style>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("LISTO PARA ENVIAR"):
-                        st.success("Copia el texto del recuadro superior y pégalo en tu app.")
+                    st.info("👆 Usa el icono de la esquina superior derecha del cuadro gris para copiar.")
 
-            # --- ALINEACIÓN DE SEGURIDAD (4 espacios) ---
+            # --- GUARDADO Y VOZ (Alineación perfecta a 8 espacios) ---
             st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
             st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
             
