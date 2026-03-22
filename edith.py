@@ -191,39 +191,48 @@ if user_text or imagen_actual:
 # --- 3. INTERFAZ DE SALIDA ---
        
    
+        # --- 3. INTERFAZ DE SALIDA UNIFICADA ---
         if respuesta:
+            # A. MOSTRAR VISUALMENTE
             if es_redaccion:
-                with st.spinner("E.D.I.T.H. está preparando la pluma..."):
-                    instruccion = f"Genera un borrador profesional/Stark para: {user_text}. REGLA: Solo el cuerpo del mensaje, sin nombres ni comillas."
-                    respuesta = cerebro.pensar_respuesta(instruccion, st.session_state.chat_history, "")
-                    respuesta_limpia = respuesta.strip().strip('"').strip("'")
-                    
               
-                    
-                    # El componente 'st.code' tiene el botón de copiar que NUNCA falla.
-                    # El parámetro wrap_lines=True hace que el texto vaya hacia abajo.
-                    st.code(respuesta_limpia, language=None, wrap_lines=True)
-                    
-                   
+                # El code block para copiar fácil
+                st.code(respuesta.strip().strip('"'), language=None, wrap_lines=True)
+                st.info("Usa el icono de la esquina para copiar.")
+            else:
+                # Si no es redacción, se muestra en el flujo normal (o puedes dejar que st.chat_message lo haga)
+                pass 
 
-            # --- GUARDADO Y VOZ (Alineación perfecta a 8 espacios) ---
+            # B. GUARDADO EN HISTORIAL (Indispensable para el contexto)
             st.session_state.chat_history.append({"autor": "Francis", "msg": user_text if user_text else "[Imagen]"})
             st.session_state.chat_history.append({"autor": "EDITH", "msg": respuesta})
-            
             memoria.agregar_recuerdo(f"Usuario: {user_text} | EDITH: {respuesta}")
 
-            if len(respuesta) < 500:
-                t_voz = respuesta.replace("*","").replace("#","").replace("_","")
-                audio_b64 = voz.generar_audio(t_voz)
-                audio_html = f'<audio autoplay><source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg"></audio>'
-                audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
+            # C. PROTOCOLO DE VOZ UNIVERSAL (Aquí es donde recuperamos el habla)
+            if len(respuesta) < 700:
+                # Limpieza profunda de caracteres que "mudecen" a la IA
+                t_voz = respuesta.replace("*","").replace("#","").replace("_","").replace("`","").replace('"',"")
+                try:
+                    audio_b64 = voz.generar_audio(t_voz)
+                    # Autoplay forzado para cualquier tipo de respuesta
+                    audio_html = f"""
+                        <div style="display:none;">
+                            <audio autoplay="true" id="stark_voice">
+                                <source src="data:audio/mpeg;base64,{audio_b64}" type="audio/mpeg">
+                            </audio>
+                        </div>
+                    """
+                    st.components.v1.html(audio_html, height=0)
+                except Exception as e_audio:
+                    st.warning("Módulo de voz fuera de línea temporalmente.")
 
+            # D. CONTROL DE REFRESCO
+            # Solo refrescamos si NO es redacción, para que el cuadro de texto no parpadee
             if not es_redaccion:
                 st.rerun()
 
     except Exception as e:
-        st.error(f"Falla crítica: {e}")
-        
+        st.error(f"Falla crítica en el núcleo: {e}")
         
 
 # --- MOSTRAR CHAT ---
