@@ -219,30 +219,29 @@ if user_text or imagen_actual:
     
             match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
             
-            if match_timer:
-                segundos_reales = int(match_timer.group(1))
-                respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
-                
-                # 1. AVISO DE INICIO
-                notificaciones.enviar_pushover(
-                    mensaje=f"Cronómetro iniciado: {segundos_reales}s.",
-                    sonido="bike"
-                )
-                
-                # 2. HILO DE ESPERA PARA EL FINAL
-                import threading
+           if match_timer:
+            segundos_reales = int(match_timer.group(1))
+            respuesta = re.sub(r"\[TIMER:\d+\]", "", respuesta).strip()
+            
+            # --- 1. DEFINIR LA FUNCIÓN CON ARGUMENTO ---
+            # Le agregamos (segundos) para que la función RECIBA el dato
+            def aviso_final_iphone(segundos):
                 import time
-        
-                def aviso_final_iphone():
-                    tiempo_real_de_espera = max(0, segundos_reales - 3) 
-                    time.sleep(tiempo_real_de_espera)
-                    notificaciones.enviar_pushover(
-                        mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
-                        titulo="ALERTA CRÍTICA",
-                        sonido="siren"
-                    )
-        
-                threading.Thread(target=aviso_final_iphone).start()
+                # Ahora usamos 'segundos' en vez de 'segundos_reales'
+                tiempo_ajustado = max(0, segundos - 3) 
+                time.sleep(tiempo_ajustado)
+                
+                notificaciones.enviar_pushover(
+                    mensaje="¡TIEMPO CUMPLIDO, FRANCIS!",
+                    titulo="ALERTA CRÍTICA",
+                    sonido="siren"
+                )
+
+            # --- 2. LANZAR EL HILO PASANDO EL DATO ---
+            # Usamos 'args' para enviarle los segundos_reales a la función
+            import threading
+            threading.Thread(target=aviso_final_iphone, args=(segundos_reales,)).start()
+
         
                 # 3. VOZ Y RELOJ (PC)
                 aviso_final = "Atención Francis, el tiempo ha expirado."
