@@ -74,8 +74,17 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 return "Jefa, no pude procesar el tiempo solicitado."
         except:
             return "Error en los sensores de tiempo."
-   # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
-    contexto_inyectado = SYSTEM_PROMPT
+      # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
+    import pytz
+    from datetime import datetime
+    zona_ar = pytz.timezone('America/Argentina/Buenos_Aires')
+    fecha_hoy = datetime.now(zona_ar).strftime("%Y-%m-%d %H:%M")
+    
+    # Le pegamos la fecha actual en la frente a E.D.I.T.H. para que no se pierda en el tiempo
+    contexto_inyectado = SYSTEM_PROMPT + f"\n\n[RELOJ DEL SISTEMA]: La fecha y hora actual exacta es {fecha_hoy}. Usa esto como tu base estricta para calcular cualquier día u hora del calendario."
+    
+
+
     
     # Inyección 1: Datos de las herramientas (Clima, Dólar, Reloj)
     if datos_extra:
