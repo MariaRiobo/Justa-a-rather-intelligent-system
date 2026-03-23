@@ -18,6 +18,8 @@ def obtener_servicio():
         service = build('calendar', 'v3', credentials=creds)
         return service
     except Exception as e:
+        # ESTA ES LA LÍNEA NUEVA: Nos mostrará el error real en rojo
+        st.error(f"Diagnóstico del sistema: {e}") 
         return None
 
 def revisar_agenda():
