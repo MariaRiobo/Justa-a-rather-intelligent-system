@@ -223,8 +223,30 @@ if user_text or imagen_actual:
                 # Mezclamos Memoria + Documentos + YouTube
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
+                
+                # --- 🎯 INTERCEPTOR DE AGENDA STARK ---
+                if "$$AGENDAR|" in respuesta:
+                    # Extraemos los datos ocultos
+                    datos = respuesta.replace("$$", "").split("|")
+                    if len(datos) >= 4:
+                        titulo = datos[1]
+                        inicio = datos[2]
+                        fin = datos[3]
+                        
+                        # Mostramos un aviso visual en la app
+                        st.info("Conectando con satélites de Google Calendar...")
+                        
+                        # Ejecutamos la orden en Google
+                        resultado_calendario = calendario.agendar_evento(titulo, inicio, fin)
+                        
+                        # Traducimos el código feo a una respuesta natural para que EDITH la hable
+                        respuesta = f"Hecho, jefa. Ya he guardado '{titulo}' en tu agenda."
+                    else:
+                        respuesta = "Hubo un error de formato al intentar agendar, Francis. Revisa los parámetros."
+                # --------------------------------------
 
            # --- ALARMA NIVEL STARK ---
+
             match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
             
             if match_timer:
