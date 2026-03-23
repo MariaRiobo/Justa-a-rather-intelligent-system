@@ -13,6 +13,8 @@ import re
 import youtube
 import memoria
 import notificaciones
+import calendario
+
 
 
 if "sistemas_activados" not in st.session_state:
@@ -51,6 +53,13 @@ st.markdown("""
 
 audio_placeholder = st.empty()
 
+
+
+# Pon esto en algún lugar de tu interfaz para probar un botón rápido:
+if st.button("Probar conexión con Google Calendar"):
+    agenda = calendario.revisar_agenda()
+    st.write(agenda)
+    
 # --- SISTEMA DE RECONOCIMIENTO DE DISPOSITIVO (COOKIES) ---
 def check_password():
     cookie_manager = stx.CookieManager()
