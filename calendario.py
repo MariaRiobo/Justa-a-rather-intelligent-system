@@ -59,3 +59,30 @@ def revisar_agenda():
         respuesta += f"📅 **{evento['summary']}** - {inicio_limpio}\n"
         
     return respuesta
+
+def agendar_evento(resumen, fecha_inicio_iso, fecha_fin_iso):
+    """Crea un evento en tu calendario de Google"""
+    service = obtener_servicio()
+    if not service:
+        return "Hubo un error de conexión con la base de datos de Google, jefa."
+
+    # Preparamos el paquete de datos para Google
+    evento = {
+        'summary': resumen,
+        'start': {
+            'dateTime': fecha_inicio_iso,
+            'timeZone': 'America/Argentina/Buenos_Aires', # Tu zona horaria
+        },
+        'end': {
+            'dateTime': fecha_fin_iso,
+            'timeZone': 'America/Argentina/Buenos_Aires',
+        },
+    }
+
+    try:
+        # Enviamos la orden de inserción
+        evento_creado = service.events().insert(calendarId='primary', body=evento).execute()
+        enlace = evento_creado.get('htmlLink')
+        return f"¡Listo, jefa! He agendado '{resumen}'. Todo en orden."
+    except Exception as e:
+        return f"Problema detectado al intentar agendar: {e}"
