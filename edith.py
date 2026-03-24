@@ -15,6 +15,21 @@ import memoria
 import notificaciones
 import calendario
 
+# --- INYECCIÓN DIRECTA DE DIAGNÓSTICO ---
+st.error("🚨 MODO DE MANTENIMIENTO STARK ACTIVADO 🚨")
+if st.button("FORZAR CONEXIÓN CON GOOGLE CALENDAR", use_container_width=True):
+    import calendario
+    with st.spinner("Infiltrando servidores de Google..."):
+        try:
+            resultado = calendario.agendar_evento(
+                "PRUEBA CLOUD STARK", 
+                "2026-12-31T12:00:00", 
+                "2026-12-31T13:00:00"
+            )
+            st.success(f"REPORTE: {resultado}")
+        except Exception as e:
+            st.error(f"FALLA CRÍTICA DE PERMISOS: {e}")
+# ----------------------------------------
 
 
 if "sistemas_activados" not in st.session_state:
@@ -42,22 +57,6 @@ if "alarmas_activas" not in st.session_state:
 # --- 5. CONFIGURACIÓN UI Y ELEMENTOS VISUALES ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
 # --- SONDA DE DIAGNÓSTICO EN LA NUBE ---
-with st.sidebar:
-    st.markdown("### 🚨 Mantenimiento Stark")
-    if st.button("FORZAR CONEXIÓN GOOGLE"):
-        import calendario
-        with st.spinner("Infiltrando servidores..."):
-            try:
-                # Mandamos fecha dura
-                resultado = calendario.agendar_evento(
-                    "PRUEBA CLOUD STARK", 
-                    "2026-12-31T12:00:00", 
-                    "2026-12-31T13:00:00"
-                )
-                st.success(f"REPORTE: {resultado}")
-            except Exception as e:
-                st.error(f"FALLA DE PERMISOS: {e}")
-# ----------------------------------------
 
 st.markdown(CSS_STARK, unsafe_allow_html=True)
 # Altavoz de EDITH (Posición fija)
