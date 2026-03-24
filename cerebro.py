@@ -40,7 +40,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 partes = codigo_ia.replace("$$", "").split("|")
                 if len(partes) >= 4:
                     resultado_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
-                    return f"Listo, Jefa. {resultado_google}"
+                    return f" {resultado_google}"
             except Exception as e:
                 return f"🚨 Error en la agenda: {e}"
 
