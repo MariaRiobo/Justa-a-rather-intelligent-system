@@ -53,7 +53,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 import calendario
                 # Ejecutamos la función que ya tenés en calendario.py
                 reporte = calendario.revisar_agenda()
-                return f"👓 **Análisis de Agenda Completado:**\n\n{reporte}"
+                return f"Jefa, esto es lo que tienes programado:{reporte}"
             except Exception as e:
                 return f"🚨 Error en el radar de eventos: {str(e)}"
 
