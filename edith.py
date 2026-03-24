@@ -15,27 +15,6 @@ import memoria
 import notificaciones
 import calendario
 
-# --- INYECCIÓN DE DIAGNÓSTICO V2 ---
-st.error("🚨 MODO DE MANTENIMIENTO STARK ACTIVADO 🚨")
-if st.button("FORZAR CONEXIÓN CON GOOGLE CALENDAR", use_container_width=True):
-    import calendario
-    import importlib
-    importlib.reload(calendario) # <--- ESTO OBLIGA A LA NUBE A LEER EL ARCHIVO NUEVO
-    
-    with st.spinner("Infiltrando servidores de Google..."):
-        try:
-            # Probamos si la función existe después de recargar
-            if hasattr(calendario, 'agendar_evento'):
-                resultado = calendario.agendar_evento(
-                    "PRUEBA CLOUD STARK", 
-                    "2026-12-31T12:00:00", 
-                    "2026-12-31T13:00:00"
-                )
-                st.success(f"REPORTE: {resultado}")
-            else:
-                st.warning("El módulo se recargó pero sigo sin ver la función 'agendar_evento'. Revisa el nombre en el archivo.")
-        except Exception as e:
-            st.error(f"FALLA CRÍTICA: {e}")
 
 
 if "sistemas_activados" not in st.session_state:
