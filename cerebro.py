@@ -4,6 +4,7 @@ from config import SYSTEM_PROMPT
 import herramientas
 import youtube
 import temporizador
+import calendario
 
 # Configuración del cliente Groq: funciona
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
@@ -76,38 +77,60 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             return "Error en los sensores de tiempo."
             
             
-    # PRIORIDAD 6: Agenda Stark (CALENDARIO INFALIBLE)
+      # PRIORIDAD 6: Inyección Directa en Google Calendar
     elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunión", "reunion", "calendario", "cita"]):
+        with st.spinner("Sincronizando con los satélites de Google Calendar..."):
             import pytz
             from datetime import datetime
+            import calendario # Conectamos el módulo de calendario
+            import re
             
             zona = pytz.timezone('America/Argentina/Buenos_Aires')
             ahora = datetime.now(zona)
             fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
             
-            prompt_agenda = f"""
-            SISTEMA DE CALENDARIO STARK.
-            FECHA Y HORA ACTUAL EXACTA: {fecha_actual_str}
-            SOLICITUD DEL USUARIO: "{texto_usuario}"
+            # Usamos a la IA solo como una calculadora de fechas ciega
+            prompt_extraccion = f"""
+            FECHA ACTUAL: {fecha_actual_str}
+            TEXTO: "{texto_usuario}"
             
-            INSTRUCCIONES CRÍTICAS:
-            Extrae el título del evento, calcula la fecha de inicio y la fecha de fin.
-            Tu ÚNICA respuesta debe ser el código de datos. Cero charla.
-            FORMATO OBLIGATORIO: $$AGENDAR|Título del evento|YYYY-MM-DDTHH:MM:SS|YYYY-MM-DDTHH:MM:SS$$
+            Extrae los datos. Responde SOLO con este formato exacto:
+            [TITULO]Nombre del evento[/TITULO]
+            [INICIO]YYYY-MM-DDTHH:MM:SS[/INICIO]
+            [FIN]YYYY-MM-DDTHH:MM:SS[/FIN]
             
-            Si no se especifica duración, asume 1 hora. Si es "mañana", suma 1 día a la fecha actual.
+            Sin saludos. Asume 1 hora de duración si no se especifica.
             """
             
             try:
-                res_agenda = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt_agenda}],
-                    model="llama-3.1-8b-instant", # Usamos el modelo rápido para extraer datos
-                    temperature=0 # Temperatura 0 para que no invente palabras
+                # 1. Calculamos las fechas
+                res_extraccion = client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt_extraccion}],
+                    model="llama-3.1-8b-instant",
+                    temperature=0
                 )
-                # Esto fuerza a E.D.I.T.H. a devolver SOLO el código secreto
-                return res_agenda.choices[0].message.content.strip()
+                texto_ia = res_extraccion.choices[0].message.content
+                
+                # 2. Extraemos con precisión quirúrgica
+                titulo = re.search(r"\[TITULO\](.*?)\[/TITULO\]", texto_ia, re.DOTALL)
+                inicio = re.search(r"\[INICIO\](.*?)\[/INICIO\]", texto_ia, re.DOTALL)
+                fin = re.search(r"\[FIN\](.*?)\[/FIN\]", texto_ia, re.DOTALL)
+                
+                if titulo and inicio and fin:
+                    # 3. ¡INYECTAMOS EN GOOGLE DESDE AQUÍ MISMO!
+                    t = titulo.group(1).strip()
+                    i = inicio.group(1).strip()
+                    f = fin.group(1).strip()
+                    
+                    resultado_api = calendario.agendar_evento(t, i, f)
+                    
+                    # 4. Le pasamos el resultado a la EDITH charlatana para que te lo lea
+                    datos_extra = f"REPORTE DE AGENDA: {resultado_api}"
+                else:
+                    datos_extra = "REPORTE DE AGENDA: Error en los sensores al intentar extraer fecha y hora."
             except Exception as e:
-                return f"Error en los sensores de agenda: {e}"
+                datos_extra = f"REPORTE DE AGENDA: Falla crítica de conexión ({e})."
+
     
       # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     import pytz
