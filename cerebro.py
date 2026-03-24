@@ -10,12 +10,11 @@ import calendario
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def pensar_respuesta(texto_usuario, historial, texto_documento=""):
-    # --- PASO 1: DETECCIÓN MANUAL DE INTENCIÓN ---
     texto_min = texto_usuario.lower()
     datos_extra = ""
     
     # ==========================================================
-    # BLOQUE 1: LA ESPERA DEL "SÍ" O "NO" PARA BORRAR
+    # 1. LA ESPERA DEL "SÍ" O "NO" PARA BORRAR
     # ==========================================================
     if st.session_state.get('esperando_confirmacion', False):
         if any(w in texto_min for w in ["si", "sí", "afirmativo", "dale", "borralo", "ok"]):
@@ -29,21 +28,21 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             st.session_state['nombre_evento'] = None
             
             if exito:
-                return f"Entendido. El evento **{nombre_borrado}** ha sido eliminado de tu calendario."
+                return f"✅ Entendido. El evento **{nombre_borrado}** ha sido eliminado de tu calendario."
             else:
-                return "Hubo un problema técnico de conexión y no pude borrar el evento."
+                return "🚨 Hubo un problema técnico y no pude borrar el evento."
                 
         elif any(w in texto_min for w in ["no", "cancela", "detente", "mejor no", "para", "deja"]):
             st.session_state['esperando_confirmacion'] = False
             st.session_state['id_para_borrar'] = None
             st.session_state['nombre_evento'] = None
-            return "Operación cancelada. El evento está a salvo en tu calendario."
+            return "🛑 Operación cancelada. El evento está a salvo en tu calendario."
             
         else:
             return "No te entendí bien. Respondeme 'sí' para borrar el evento o 'no' para cancelar la operación."
 
     # ==========================================================
-    # BLOQUE 2: DETECCIÓN DE "BORRAR EVENTO"
+    # 2. DETECCIÓN DE "BORRAR EVENTO"
     # ==========================================================
     elif any(w in texto_min for w in ["borra", "borrar", "elimina", "eliminar", "cancela"]) and any(w in texto_min for w in ["evento", "reunion", "cita"]):
         import calendario
@@ -64,12 +63,11 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             return f"⚠️ **PROTOCOLO DE BORRADO:** Encontré el evento **'{evento_encontrado['titulo']}'**. ¿Estás segura de que quieres borrarlo definitivamente?"
         else:
             return f"👓 Escaneé el calendario pero no encontré ningún evento próximo que coincida con '{evento_a_borrar}'."
-            
-    # Solo entra aquí si mencionas agendar Y NO estás haciendo una pregunta (que, hay, etc.)
-    palabras_agendar = ["agenda", "agendar", "programa", "reunion", "cita", "evento"]
-    palabras_pregunta = ["que", "hay", "cuales", "ver", "mostrame", "lista"]
 
-    elif any(w in texto_min for w in palabras_agendar) and not any(w in texto_min for w in palabras_pregunta):
+    # ==========================================================
+    # 3. INTERCEPTOR DE AGENDA (SÓLO CREACIÓN)
+    # ==========================================================
+    elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunion", "cita", "evento"]) and not any(w in texto_min for w in ["que", "hay", "cuales", "ver", "mostrame", "lista"]):
         import pytz
         from datetime import datetime
         import calendario
@@ -93,21 +91,21 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                     resultado_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
                     return f"Listo, Jefa. {resultado_google}"
             except Exception as e:
-                return f"Error en la agenda: {e}"
+                return f"🚨 Error en la agenda: {e}"
 
-        return codigo_ia # Por si la IA no generó el código
- 
-                # --- PRIORIDAD 0.5: RASTREADOR DE EVENTOS (LECTURA) ---
+        return codigo_ia
+
+    # ==========================================================
+    # 4. RASTREADOR DE EVENTOS (LECTURA)
+    # ==========================================================
     elif any(w in texto_min for w in ["que tengo", "eventos", "proximos", "calendario", "agenda", "planes"]) and "agendar" not in texto_min:
         with st.spinner("Escaneando servidores de Google..."):
             try:
                 import calendario
-                # Ejecutamos la función que ya tenés en calendario.py
                 reporte = calendario.revisar_agenda()
-                return f"**Análisis de Agenda Completado:**\n\n{reporte}"
+                return f"👓 **Análisis de Agenda Completado:**\n\n{reporte}"
             except Exception as e:
-                return f"Error en el radar de eventos: {str(e)}"
-
+                return f"🚨 Error en el radar de eventos: {str(e)}"
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
     elif "dolar" in texto_min or "dólar" in texto_min:
