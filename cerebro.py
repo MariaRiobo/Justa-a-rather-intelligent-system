@@ -21,9 +21,9 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         with st.spinner("Accediendo a la base de datos financiera..."):
             datos_extra = herramientas.obtener_cotizacion_dolar()
             
-        # PRIORIDAD 1: AGENDA STARK (CORTOCIRCUITO DIRECTO) - DEBE IR ARRIBA DEL CLIMA
+           # PRIORIDAD 6: Agenda Stark (UNIFICADA)
     elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunión", "reunion", "calendario", "cita", "evento"]):
-        with st.spinner("Sincronizando con servidores de Google..."):
+        with st.spinner("Sincronizando con Google Calendar..."):
             import pytz
             from datetime import datetime
             import calendario
@@ -33,15 +33,15 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             ahora = datetime.now(zona)
             fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
             
+            # Forzamos a la IA a usar el formato viejo que edith.py entiende
             prompt_extraccion = f"""
-            SISTEMA DE CALENDARIO.
             FECHA ACTUAL: {fecha_actual_str}
             SOLICITUD: "{texto_usuario}"
             
-            Extrae los datos. Responde SOLO con este formato exacto:
-            $$[Resumen del evento]|[YYYY-MM-DDTHH:MM:SS]|[YYYY-MM-DDTHH:MM:SS]$$
+            Extrae los datos y responde UNICAMENTE con este formato:
+            $$AGENDAR|Título|YYYY-MM-DDTHH:MM:SS|YYYY-MM-DDTHH:MM:SS$$
             
-            Asume 1 hora si no se especifica. Si dice 'mañana', suma 1 día a la fecha actual. Cero charla.
+            Asume 1 hora si no se especifica. Si dice 'mañana', es {ahora.day + 1}. No hables, solo da el código.
             """
             
             try:
@@ -50,23 +50,14 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                     model="llama-3.1-8b-instant",
                     temperature=0
                 )
-                texto_ia = res_extraccion.choices[0].message.content.strip()
+                codigo_secreto = res_extraccion.choices[0].message.content.strip()
                 
-                # Buscamos el formato $$TITULO|INICIO|FIN$$
-                match = re.search(r"\$\$(.*?)\|(.*?)\|(.*?)\$\$", texto_ia)
+                # En lugar de ejecutarlo aquí, se lo devolvemos a edith.py 
+                # para que el interceptor haga su trabajo.
+                return codigo_secreto
                 
-                if match:
-                    t = match.group(1).strip()
-                    i = match.group(2).strip()
-                    f = match.group(3).strip()
-                    
-                    # Llamamos a Google
-                    resultado_api = calendario.agendar_evento(t, i, f)
-                    return f"Reporte de Agenda: {resultado_api}"
-                else:
-                    return f"Error táctico: La IA no pudo procesar las fechas. Respondió: {texto_ia}"
             except Exception as e:
-                return f"Falla en la matriz del calendario: {e}"
+                return f"Falla en sensores de agenda: {e}"
 
             
     # PRIORIDAD 2: Rastreo Meteorológico
