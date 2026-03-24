@@ -30,18 +30,29 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             model="llama-3.1-8b-instant",
             temperature=0
         )
+                # ... (dentro de Prioridad 0)
         codigo_ia = res.choices[0].message.content.strip()
 
-        # AQUÍ ESTÁ EL TRUCO: El cerebro no solo habla, ¡HACE!
-        if "$$AGENDAR|" in codigo_ia:
+        # Limpieza de seguridad: buscamos el $$ por si la IA escribió texto antes
+        if "$$AGENDAR" in codigo_ia:
             try:
-                partes = codigo_ia.replace("$$", "").split("|")
+                # Extraemos solo lo que está entre los $$
+                inicio_token = codigo_ia.find("$$AGENDAR")
+                fin_token = codigo_ia.find("$$", inicio_token + 2) + 2
+                comando_limpio = codigo_ia[inicio_token:fin_token]
+                
+                partes = comando_limpio.replace("$$", "").split("|")
+                
                 if len(partes) >= 4:
-                    # Ejecutamos la acción en Google aquí mismo
+                    # EJECUCIÓN REAL
                     resultado_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
-                    return f"✅ Confirmado, Francis. {resultado_google}"
+                    # Devolvemos un mensaje que confirme que la API se usó
+                    return f"✅ **OPERACIÓN REALIZADA:** {resultado_google}"
             except Exception as e:
-                return f"🚨 Error en el despliegue de agenda: {e}"
+                return f"🚨 Error en el despliegue: {e}"
+        
+        # Si llegó acá y no agendó, es que la IA solo charló
+        return "⚠️ La IA confirmó pero el protocolo de enlace con Google falló. Reintentá."
 
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
