@@ -13,11 +13,61 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     # --- PASO 1: DETECCIÓN MANUAL DE INTENCIÓN ---
     texto_min = texto_usuario.lower()
     datos_extra = ""
+    
+    
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
     if "dolar" in texto_min or "dólar" in texto_min:
         with st.spinner("Accediendo a la base de datos financiera..."):
             datos_extra = herramientas.obtener_cotizacion_dolar()
+            
+        # PRIORIDAD 1: AGENDA STARK (CORTOCIRCUITO DIRECTO) - DEBE IR ARRIBA DEL CLIMA
+    elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunión", "reunion", "calendario", "cita", "evento"]):
+        with st.spinner("Sincronizando con servidores de Google..."):
+            import pytz
+            from datetime import datetime
+            import calendario
+            import re
+            
+            zona = pytz.timezone('America/Argentina/Buenos_Aires')
+            ahora = datetime.now(zona)
+            fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
+            
+            prompt_extraccion = f"""
+            SISTEMA DE CALENDARIO.
+            FECHA ACTUAL: {fecha_actual_str}
+            SOLICITUD: "{texto_usuario}"
+            
+            Extrae los datos. Responde SOLO con este formato exacto:
+            $$[Resumen del evento]|[YYYY-MM-DDTHH:MM:SS]|[YYYY-MM-DDTHH:MM:SS]$$
+            
+            Asume 1 hora si no se especifica. Si dice 'mañana', suma 1 día a la fecha actual. Cero charla.
+            """
+            
+            try:
+                res_extraccion = client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt_extraccion}],
+                    model="llama-3.1-8b-instant",
+                    temperature=0
+                )
+                texto_ia = res_extraccion.choices[0].message.content.strip()
+                
+                # Buscamos el formato $$TITULO|INICIO|FIN$$
+                match = re.search(r"\$\$(.*?)\|(.*?)\|(.*?)\$\$", texto_ia)
+                
+                if match:
+                    t = match.group(1).strip()
+                    i = match.group(2).strip()
+                    f = match.group(3).strip()
+                    
+                    # Llamamos a Google
+                    resultado_api = calendario.agendar_evento(t, i, f)
+                    return f"Reporte de Agenda: {resultado_api}"
+                else:
+                    return f"Error táctico: La IA no pudo procesar las fechas. Respondió: {texto_ia}"
+            except Exception as e:
+                return f"Falla en la matriz del calendario: {e}"
+
             
     # PRIORIDAD 2: Rastreo Meteorológico
     elif any(w in texto_min for w in ["clima", "temperatura", "tiempo", "llover", "lluvia", "pronóstico", "mañana", "semana"]):
@@ -77,57 +127,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             return "Error en los sensores de tiempo."
             
             
-        # PRIORIDAD 6: Agenda Stark (CORTOCIRCUITO DIRECTO)
-    elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunión", "reunion", "calendario", "cita"]):
-        import pytz
-        from datetime import datetime
-        import calendario
-        import re
-        
-        zona = pytz.timezone('America/Argentina/Buenos_Aires')
-        ahora = datetime.now(zona)
-        fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
-        
-        prompt_extraccion = f"""
-        FECHA ACTUAL: {fecha_actual_str}
-        TEXTO: "{texto_usuario}"
-        
-        Extrae los datos. Responde SOLO con este formato exacto:
-        [TITULO]Nombre del evento[/TITULO]
-        [INICIO]YYYY-MM-DDTHH:MM:SS[/INICIO]
-        [FIN]YYYY-MM-DDTHH:MM:SS[/FIN]
-        
-        Sin saludos. Asume 1 hora de duración si no se especifica. Si dice "mañana", suma 1 día a la fecha actual.
-        """
-        
-        try:
-            res_extraccion = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt_extraccion}],
-                model="llama-3.1-8b-instant",
-                temperature=0
-            )
-            texto_ia = res_extraccion.choices[0].message.content
-            
-            titulo = re.search(r"\[TITULO\](.*?)\[/TITULO\]", texto_ia, re.DOTALL)
-            inicio = re.search(r"\[INICIO\](.*?)\[/INICIO\]", texto_ia, re.DOTALL)
-            fin = re.search(r"\[FIN\](.*?)\[/FIN\]", texto_ia, re.DOTALL)
-            
-            if titulo and inicio and fin:
-                t = titulo.group(1).strip()
-                i = inicio.group(1).strip()
-                f = fin.group(1).strip()
-                
-                # EJECUTAMOS Y DEVOLVEMOS EL RESULTADO INMEDIATAMENTE (Saltamos al Paso 2)
-                resultado_api = calendario.agendar_evento(t, i, f)
-                return f"Reporte de los servidores de Google: {resultado_api}"
-            else:
-                # Si Llama 3 se confunde, veremos exactamente qué dijo
-                return f"Error en los sensores de extracción. La IA leyó esto: {texto_ia}"
-                
-        except Exception as e:
-            return f"Falla crítica en el módulo de calendario: {e}"
-
-
+      
       # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     import pytz
     from datetime import datetime
