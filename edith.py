@@ -240,11 +240,23 @@ if user_text or imagen_actual:
          
 
             else:
-                # Mezclamos Memoria + Documentos + YouTube
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
                 
-                                
+                # --- 🎯 EL INTERCEPTOR REAL ---
+                if "$$AGENDAR|" in respuesta:
+                    # Si detectamos el código, ejecutamos la acción invisible
+                    datos = respuesta.replace("$$", "").split("|")
+                    if len(datos) >= 4:
+                        titulo = datos[1]
+                        inicio = datos[2]
+                        fin = datos[3]
+                        with st.spinner("Escribiendo en los servidores de Google..."):
+                            resultado_calendario = calendario.agendar_evento(titulo, inicio, fin)
+                            respuesta = f"✅ Protocolo completado: {resultado_calendario}"
+                    else:
+                        respuesta = "Error de telemetría: Datos de agenda incompletos."
+      
            # --- ALARMA NIVEL STARK ---
 
             match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
