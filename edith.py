@@ -41,16 +41,6 @@ if "alarmas_activas" not in st.session_state:
     
 # --- 5. CONFIGURACIÓN UI Y ELEMENTOS VISUALES ---
 st.set_page_config(page_title="E.D.I.T.H.", page_icon="👓", layout="centered")
-st.markdown(CSS_STARK, unsafe_allow_html=True)
-# Altavoz de EDITH (Posición fija)
-placeholder_audio = st.empty()
-
-# 👇 ESTA ES LA ÚNICA VEZ QUE DIBUJAMOS EL ORBE Y EL TÍTULO 👇
-st.markdown("""
-    <div class="orb"></div>
-    <h1 class="edith_title">E.D.I.T.H.</h1>
-""", unsafe_allow_html=True)
-
 # --- SONDA DE DIAGNÓSTICO EN LA NUBE ---
 with st.sidebar:
     st.markdown("### 🚨 Mantenimiento Stark")
@@ -68,6 +58,17 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"FALLA DE PERMISOS: {e}")
 # ----------------------------------------
+
+st.markdown(CSS_STARK, unsafe_allow_html=True)
+# Altavoz de EDITH (Posición fija)
+placeholder_audio = st.empty()
+
+# 👇 ESTA ES LA ÚNICA VEZ QUE DIBUJAMOS EL ORBE Y EL TÍTULO 👇
+st.markdown("""
+    <div class="orb"></div>
+    <h1 class="edith_title">E.D.I.T.H.</h1>
+""", unsafe_allow_html=True)
+
 
 
 audio_placeholder = st.empty()
