@@ -13,12 +13,43 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     # --- PASO 1: DETECCIÓN MANUAL DE INTENCIÓN ---
     texto_min = texto_usuario.lower()
     datos_extra = ""
-        # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (SÓLO CREACIÓN) ---
+      
     # Solo entra aquí si mencionas agendar Y NO estás haciendo una pregunta (que, hay, etc.)
     palabras_agendar = ["agenda", "agendar", "programa", "reunion", "cita", "evento"]
     palabras_pregunta = ["que", "hay", "cuales", "ver", "mostrame", "lista"]
 
-    if any(w in texto_min for w in palabras_agendar) and not any(w in texto_min for w in palabras_pregunta):
+    # --- NUEVO: PRIORIDAD MÁXIMA - PROTOCOLO DE BORRADO ---
+    # ==========================================================
+    if st.session_state.get('esperando_confirmacion', False):
+        if any(w in texto_min for w in ["si", "sí", "afirmativo", "dale", "borralo", "ok"]):
+            import calendario
+            exito = calendario.ejecutar_borrado(st.session_state['id_para_borrar'])
+            nombre = st.session_state['nombre_evento']
+            st.session_state['esperando_confirmacion'] = False
+            if exito: return f"Entendido, Jefa. El evento **{nombre}** ha sido eliminado."
+            else: return "Error al intentar borrar el evento."
+        elif any(w in texto_min for w in ["no", "cancela", "detente", "mejor no"]):
+            st.session_state['esperando_confirmacion'] = False
+            return "Operación cancelada. El evento sigue en tu calendario."
+        else:
+            return "Respondeme 'sí' para borrar el evento o 'no' para cancelar."
+
+    elif any(w in texto_min for w in ["borra", "borrar", "elimina"]) and any(w in texto_min for w in ["evento", "reunion", "cita"]):
+        import calendario
+        prompt = f"Extrae SOLO el nombre o tema del evento en: '{texto_usuario}'. Responde SOLO con el nombre."
+        res = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="llama-3.1-8b-instant", temperature=0)
+        ev = res.choices[0].message.content.strip()
+        
+        evento_encontrado = calendario.buscar_evento_para_borrar(ev)
+        if evento_encontrado:
+            st.session_state['esperando_confirmacion'] = True
+            st.session_state['id_para_borrar'] = evento_encontrado['id']
+            st.session_state['nombre_evento'] = evento_encontrado['titulo']
+            return f"⚠️ **PROTOCOLO DE BORRADO:** Encontré el evento **'{evento_encontrado['titulo']}'**. ¿Estás segura de que quieres borrarlo definitivamente?"
+        else:
+            return f"👓 No encontré ningún evento próximo que coincida con '{ev}'."
+  # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (SÓLO CREACIÓN) ---
+    elif any(w in texto_min for w in palabras_agendar) and not any(w in texto_min for w in palabras_pregunta):
         import pytz
         from datetime import datetime
         import calendario
