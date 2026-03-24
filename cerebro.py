@@ -23,14 +23,23 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         
         prompt_agenda = f"FECHA ACTUAL: {ahora.strftime('%Y-%m-%d %H:%M:%S')}. Extrae datos de: '{texto_usuario}'. Responde SOLO: $$AGENDAR|Titulo|Inicio_ISO|Fin_ISO$$. Si no hay hora, usa la actual. No hables."
         
+                # ... (código anterior del prompt_agenda)
         res = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt_agenda}],
             model="llama-3.1-8b-instant",
             temperature=0
         )
-        return res.choices[0].message.content.strip()
-
-    # ... el resto de tus IF y ELIF (Dolar, Clima, etc.) siguen abajo ...
+        codigo_ia = res.choices[0].message.content.strip()
+        
+        # --- AGREGÁ ESTO PARA QUE EL CEREBRO ACTÚE ---
+        if "$$AGENDAR|" in codigo_ia:
+            import calendario
+            partes = codigo_ia.replace("$$", "").split("|")
+            if len(partes) >= 4:
+                resultado = calendario.agendar_evento(partes[1], partes[2], partes[3])
+                return f"✅ Entendido, Francis. Protocolo de agenda ejecutado: {resultado}"
+        
+        return codigo_ia # Por si falla lo anterior
 
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
