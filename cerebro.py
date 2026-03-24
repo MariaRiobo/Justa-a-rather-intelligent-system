@@ -13,17 +13,19 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     # --- PASO 1: DETECCIÓN MANUAL DE INTENCIÓN ---
     texto_min = texto_usuario.lower()
     datos_extra = ""
-    
-                # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (EJECUCIÓN DIRECTA) ---
-    if any(w in texto_min for w in ["agenda", "agendar", "programa", "reunion", "cita", "evento"]):
+        # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (SÓLO CREACIÓN) ---
+    # Solo entra aquí si mencionas agendar Y NO estás haciendo una pregunta (que, hay, etc.)
+    palabras_agendar = ["agenda", "agendar", "programa", "reunion", "cita", "evento"]
+    palabras_pregunta = ["que", "hay", "cuales", "ver", "mostrame", "lista"]
+
+    if any(w in texto_min for w in palabras_agendar) and not any(w in texto_min for w in palabras_pregunta):
         import pytz
         from datetime import datetime
-        import calendario  # <--- IMPORTANTE: Importamos tu módulo
+        import calendario
         
         zona = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(zona)
         
-        # Le pedimos a la IA que solo extraiga los datos
         prompt_agenda = f"FECHA ACTUAL: {ahora.strftime('%Y-%m-%d %H:%M:%S')}. Extrae datos de: '{texto_usuario}'. Responde SOLO el código: $$AGENDAR|Titulo|Inicio_ISO|Fin_ISO$$. No hables."
         
         res = client.chat.completions.create(
@@ -33,17 +35,15 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         )
         codigo_ia = res.choices[0].message.content.strip()
 
-        # AQUÍ ESTÁ EL TRUCO: Si hay código, el cerebro ejecuta la acción ANTES de responder
         if "$$AGENDAR|" in codigo_ia:
             try:
                 partes = codigo_ia.replace("$$", "").split("|")
                 if len(partes) >= 4:
-                    # ESTA ES LA LLAMADA REAL A GOOGLE
                     resultado_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
-                    return f"Listo, Jefa {resultado_google}"
+                    return f"Listo, Jefa. {resultado_google}"
             except Exception as e:
                 return f"🚨 Error en la agenda: {e}"
-        
+
         return codigo_ia # Por si la IA no generó el código
  
                 # --- PRIORIDAD 0.5: RASTREADOR DE EVENTOS (LECTURA) ---
