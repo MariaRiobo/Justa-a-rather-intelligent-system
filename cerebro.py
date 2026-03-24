@@ -14,45 +14,37 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     texto_min = texto_usuario.lower()
     datos_extra = ""
     
-            # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (EJECUCIÓN TOTAL) ---
+                # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (EJECUCIÓN DIRECTA) ---
     if any(w in texto_min for w in ["agenda", "agendar", "programa", "reunion", "cita", "evento"]):
         import pytz
         from datetime import datetime
-        import calendario # Nos aseguramos de tener el módulo a mano
+        import calendario  # <--- IMPORTANTE: Importamos tu módulo
         
         zona = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(zona)
         
-        # Un prompt ultra-seco para que no alucine
-        prompt_tecnico = f"""
-        FECHA ACTUAL: {ahora.strftime('%Y-%m-%d %H:%M:%S')}
-        PEDIDO: "{texto_usuario}"
-        Responde ÚNICAMENTE: $$AGENDAR|Titulo|Inicio_ISO|Fin_ISO$$
-        """
+        # Le pedimos a la IA que solo extraiga los datos
+        prompt_agenda = f"FECHA ACTUAL: {ahora.strftime('%Y-%m-%d %H:%M:%S')}. Extrae datos de: '{texto_usuario}'. Responde SOLO el código: $$AGENDAR|Titulo|Inicio_ISO|Fin_ISO$$. No hables."
         
         res = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt_tecnico}],
+            messages=[{"role": "user", "content": prompt_agenda}],
             model="llama-3.1-8b-instant",
             temperature=0
         )
-        comando = res.choices[0].message.content.strip()
+        codigo_ia = res.choices[0].message.content.strip()
 
-        # Si la IA respondió con el código (aunque tenga texto extra)
-        if "$$AGENDAR|" in comando:
+        # AQUÍ ESTÁ EL TRUCO: Si hay código, el cerebro ejecuta la acción ANTES de responder
+        if "$$AGENDAR|" in codigo_ia:
             try:
-                # Limpieza por si la IA se puso charlatana
-                idx = comando.find("$$AGENDAR|")
-                limpio = comando[idx:].replace("$$", "").split("|")
-                
-                if len(limpio) >= 4:
-                    # AQUÍ SE PRODUCE LA MAGIA: Llamada real a la API
-                    resultado_api = calendario.agendar_evento(limpio[1], limpio[2], limpio[3])
-                    return f"✅ **Protocolo Ejecutado:** {resultado_api}"
+                partes = codigo_ia.replace("$$", "").split("|")
+                if len(partes) >= 4:
+                    # ESTA ES LA LLAMADA REAL A GOOGLE
+                    resultado_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
+                    return f"✅ **SISTEMA ACTUALIZADO:** {resultado_google}"
             except Exception as e:
-                return f"🚨 Falla en el motor de agenda: {str(e)}"
-
-        # Si no devolvió el código, forzamos una respuesta de error para saber qué pasó
-        return f"⚠️ Error de formato en el cerebro. La IA dijo: {comando}"
+                return f"🚨 Error en el despliegue de agenda: {e}"
+        
+        return codigo_ia # Por si la IA no generó el código
 
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
