@@ -13,12 +13,26 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     # --- PASO 1: DETECCIÓN MANUAL DE INTENCIÓN ---
     texto_min = texto_usuario.lower()
     datos_extra = ""
-        # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (SÓLO CREACIÓN) ---
+    
+    # 🚨 PEGAR AQUÍ EL BLOQUE 1: LA ESPERA DEL "SÍ" O "NO"
+    # ==========================================================
+    if st.session_state.get('esperando_confirmacion', False):
+        if any(w in texto_min for w in ["si", "sí", "afirmativo", "dale", "borralo"]):
+             # ... (código que borra)
+        elif any(w in texto_min for w in ["no", "cancela", "detente"]):
+             # ... (código que cancela)
+
+    # ==========================================================
+    # 🚨 PEGAR AQUÍ EL BLOQUE 2: DETECCIÓN DE "BORRAR EVENTO"
+    # ==========================================================
+    elif any(w in texto_min for w in ["borra", "borrar", "elimina"]) and any(w in texto_min for w in ["evento", "reunion"]):
+        # ... (código que busca el evento y activa la confirmación)
+    # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (SÓLO CREACIÓN) ---
     # Solo entra aquí si mencionas agendar Y NO estás haciendo una pregunta (que, hay, etc.)
     palabras_agendar = ["agenda", "agendar", "programa", "reunion", "cita", "evento"]
     palabras_pregunta = ["que", "hay", "cuales", "ver", "mostrame", "lista"]
 
-    if any(w in texto_min for w in palabras_agendar) and not any(w in texto_min for w in palabras_pregunta):
+    elif any(w in texto_min for w in palabras_agendar) and not any(w in texto_min for w in palabras_pregunta):
         import pytz
         from datetime import datetime
         import calendario
