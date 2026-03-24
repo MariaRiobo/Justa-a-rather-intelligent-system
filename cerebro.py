@@ -14,32 +14,34 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     texto_min = texto_usuario.lower()
     datos_extra = ""
     
-    # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA ---
+        # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (EJECUCIÓN DIRECTA) ---
     if any(w in texto_min for w in ["agenda", "agendar", "programa", "reunion", "cita", "evento"]):
         import pytz
         from datetime import datetime
+        import calendario  # <--- IMPORTANTE
+        
         zona = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(zona)
         
         prompt_agenda = f"FECHA ACTUAL: {ahora.strftime('%Y-%m-%d %H:%M:%S')}. Extrae datos de: '{texto_usuario}'. Responde SOLO: $$AGENDAR|Titulo|Inicio_ISO|Fin_ISO$$. Si no hay hora, usa la actual. No hables."
         
-                # ... (código anterior del prompt_agenda)
         res = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt_agenda}],
             model="llama-3.1-8b-instant",
             temperature=0
         )
         codigo_ia = res.choices[0].message.content.strip()
-        
-        # --- AGREGÁ ESTO PARA QUE EL CEREBRO ACTÚE ---
+
+        # AQUÍ ESTÁ EL TRUCO: El cerebro no solo habla, ¡HACE!
         if "$$AGENDAR|" in codigo_ia:
-            import calendario
-            partes = codigo_ia.replace("$$", "").split("|")
-            if len(partes) >= 4:
-                resultado = calendario.agendar_evento(partes[1], partes[2], partes[3])
-                return f"✅ Entendido, Francis. Protocolo de agenda ejecutado: {resultado}"
-        
-        return codigo_ia # Por si falla lo anterior
+            try:
+                partes = codigo_ia.replace("$$", "").split("|")
+                if len(partes) >= 4:
+                    # Ejecutamos la acción en Google aquí mismo
+                    resultado_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
+                    return f"✅ Confirmado, Francis. {resultado_google}"
+            except Exception as e:
+                return f"🚨 Error en el despliegue de agenda: {e}"
 
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
