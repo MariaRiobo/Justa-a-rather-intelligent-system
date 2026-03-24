@@ -77,61 +77,57 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             return "Error en los sensores de tiempo."
             
             
-      # PRIORIDAD 6: Inyección Directa en Google Calendar
+        # PRIORIDAD 6: Agenda Stark (CORTOCIRCUITO DIRECTO)
     elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunión", "reunion", "calendario", "cita"]):
-        with st.spinner("Sincronizando con los satélites de Google Calendar..."):
-            import pytz
-            from datetime import datetime
-            import calendario # Conectamos el módulo de calendario
-            import re
+        import pytz
+        from datetime import datetime
+        import calendario
+        import re
+        
+        zona = pytz.timezone('America/Argentina/Buenos_Aires')
+        ahora = datetime.now(zona)
+        fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
+        
+        prompt_extraccion = f"""
+        FECHA ACTUAL: {fecha_actual_str}
+        TEXTO: "{texto_usuario}"
+        
+        Extrae los datos. Responde SOLO con este formato exacto:
+        [TITULO]Nombre del evento[/TITULO]
+        [INICIO]YYYY-MM-DDTHH:MM:SS[/INICIO]
+        [FIN]YYYY-MM-DDTHH:MM:SS[/FIN]
+        
+        Sin saludos. Asume 1 hora de duración si no se especifica. Si dice "mañana", suma 1 día a la fecha actual.
+        """
+        
+        try:
+            res_extraccion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt_extraccion}],
+                model="llama-3.1-8b-instant",
+                temperature=0
+            )
+            texto_ia = res_extraccion.choices[0].message.content
             
-            zona = pytz.timezone('America/Argentina/Buenos_Aires')
-            ahora = datetime.now(zona)
-            fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
+            titulo = re.search(r"\[TITULO\](.*?)\[/TITULO\]", texto_ia, re.DOTALL)
+            inicio = re.search(r"\[INICIO\](.*?)\[/INICIO\]", texto_ia, re.DOTALL)
+            fin = re.search(r"\[FIN\](.*?)\[/FIN\]", texto_ia, re.DOTALL)
             
-            # Usamos a la IA solo como una calculadora de fechas ciega
-            prompt_extraccion = f"""
-            FECHA ACTUAL: {fecha_actual_str}
-            TEXTO: "{texto_usuario}"
-            
-            Extrae los datos. Responde SOLO con este formato exacto:
-            [TITULO]Nombre del evento[/TITULO]
-            [INICIO]YYYY-MM-DDTHH:MM:SS[/INICIO]
-            [FIN]YYYY-MM-DDTHH:MM:SS[/FIN]
-            
-            Sin saludos. Asume 1 hora de duración si no se especifica.
-            """
-            
-            try:
-                # 1. Calculamos las fechas
-                res_extraccion = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt_extraccion}],
-                    model="llama-3.1-8b-instant",
-                    temperature=0
-                )
-                texto_ia = res_extraccion.choices[0].message.content
+            if titulo and inicio and fin:
+                t = titulo.group(1).strip()
+                i = inicio.group(1).strip()
+                f = fin.group(1).strip()
                 
-                # 2. Extraemos con precisión quirúrgica
-                titulo = re.search(r"\[TITULO\](.*?)\[/TITULO\]", texto_ia, re.DOTALL)
-                inicio = re.search(r"\[INICIO\](.*?)\[/INICIO\]", texto_ia, re.DOTALL)
-                fin = re.search(r"\[FIN\](.*?)\[/FIN\]", texto_ia, re.DOTALL)
+                # EJECUTAMOS Y DEVOLVEMOS EL RESULTADO INMEDIATAMENTE (Saltamos al Paso 2)
+                resultado_api = calendario.agendar_evento(t, i, f)
+                return f"Reporte de los servidores de Google: {resultado_api}"
+            else:
+                # Si Llama 3 se confunde, veremos exactamente qué dijo
+                return f"Error en los sensores de extracción. La IA leyó esto: {texto_ia}"
                 
-                if titulo and inicio and fin:
-                    # 3. ¡INYECTAMOS EN GOOGLE DESDE AQUÍ MISMO!
-                    t = titulo.group(1).strip()
-                    i = inicio.group(1).strip()
-                    f = fin.group(1).strip()
-                    
-                    resultado_api = calendario.agendar_evento(t, i, f)
-                    
-                    # 4. Le pasamos el resultado a la EDITH charlatana para que te lo lea
-                    datos_extra = f"REPORTE DE AGENDA: {resultado_api}"
-                else:
-                    datos_extra = "REPORTE DE AGENDA: Error en los sensores al intentar extraer fecha y hora."
-            except Exception as e:
-                datos_extra = f"REPORTE DE AGENDA: Falla crítica de conexión ({e})."
+        except Exception as e:
+            return f"Falla crítica en el módulo de calendario: {e}"
 
-    
+
       # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     import pytz
     from datetime import datetime
