@@ -54,11 +54,6 @@ st.markdown("""
 audio_placeholder = st.empty()
 
 
-
-# Pon esto en algún lugar de tu interfaz para probar un botón rápido:
-if st.button("Probar conexión con Google Calendar"):
-    agenda = calendario.revisar_agenda()
-    st.write(agenda)
     
 # --- SISTEMA DE RECONOCIMIENTO DE DISPOSITIVO (COOKIES) ---
 def check_password():
@@ -224,26 +219,26 @@ if user_text or imagen_actual:
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
                 
-                # --- 🎯 INTERCEPTOR DE AGENDA STARK ---
+                                # --- 🎯 INTERCEPTOR DE AGENDA STARK ---
                 if "$$AGENDAR|" in respuesta:
-                    # Extraemos los datos ocultos
                     datos = respuesta.replace("$$", "").split("|")
                     if len(datos) >= 4:
-                        titulo = datos[1]
-                        inicio = datos[2]
-                        fin = datos[3]
+                        # El .strip() limpia espacios vacíos que a veces mete la IA por error
+                        titulo = datos[1].strip()
+                        inicio = datos[2].strip()
+                        fin = datos[3].strip()
                         
-                        # Mostramos un aviso visual en la app
                         st.info("Conectando con satélites de Google Calendar...")
                         
-                        # Ejecutamos la orden en Google
+                        # Ejecutamos la orden y CAPTURAMOS EL REPORTE REAL DE GOOGLE
                         resultado_calendario = calendario.agendar_evento(titulo, inicio, fin)
                         
-                        # Traducimos el código feo a una respuesta natural para que EDITH la hable
-                        respuesta = f"Hecho, jefa. Ya he guardado '{titulo}' en tu agenda."
+                        # Ahora EDITH dirá exactamente lo que pasó (éxito o el error técnico)
+                        respuesta = f"Reporte de Google: {resultado_calendario}"
                     else:
-                        respuesta = "Hubo un error de formato al intentar agendar, Francis. Revisa los parámetros."
+                        respuesta = "Hubo un error de formato al intentar agendar, Francis."
                 # --------------------------------------
+
 
            # --- ALARMA NIVEL STARK ---
 
