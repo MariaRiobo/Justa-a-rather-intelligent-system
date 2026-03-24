@@ -56,7 +56,7 @@ def revisar_agenda():
         else:
             inicio_limpio = f"El día {inicio} (Todo el día)"
             
-        respuesta += f"📅 **{evento['summary']}** - {inicio_limpio}\n"
+        respuesta += f" **{evento['summary']}** - {inicio_limpio}\n"
         
     return respuesta
 
