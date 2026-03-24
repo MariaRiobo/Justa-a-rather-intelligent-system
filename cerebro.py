@@ -40,22 +40,22 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 if len(partes) >= 4:
                     # ESTA ES LA LLAMADA REAL A GOOGLE
                     resultado_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
-                    return f"✅ **SISTEMA ACTUALIZADO:** {resultado_google}"
+                    return f"Listo, Jefa {resultado_google}"
             except Exception as e:
-                return f"🚨 Error en el despliegue de agenda: {e}"
+                return f"🚨 Error en la agenda: {e}"
         
         return codigo_ia # Por si la IA no generó el código
  
-            # --- PRIORIDAD 0.5: LECTURA DE AGENDA (EL RASTREADOR) ---
-    elif any(w in texto_min for w in ["qué tengo", "eventos", "proximos", "calendario", "agenda", "planes"]) and "agendar" not in texto_min:
-        with st.spinner("Sincronizando con los servidores de Google..."):
+                # --- PRIORIDAD 0.5: RASTREADOR DE EVENTOS (LECTURA) ---
+    elif any(w in texto_min for w in ["que tengo", "eventos", "proximos", "calendario", "agenda", "planes"]) and "agendar" not in texto_min:
+        with st.spinner("Escaneando servidores de Google..."):
             try:
                 import calendario
-                # Llamamos a la función que ya tienes escrita en calendario.py
-                reporte_eventos = calendario.revisar_agenda()
-                return f"👓 **Reporte de Situación - Agenda:**\n\n{reporte_eventos}"
+                # Ejecutamos la función que ya tenés en calendario.py
+                reporte = calendario.revisar_agenda()
+                return f"👓 **Análisis de Agenda Completado:**\n\n{reporte}"
             except Exception as e:
-                return f"🚨 Fallo en los sensores de lectura: {str(e)}"
+                return f"🚨 Error en el radar de eventos: {str(e)}"
 
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
