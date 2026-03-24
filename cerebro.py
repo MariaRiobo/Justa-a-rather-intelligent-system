@@ -78,7 +78,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         return codigo_ia # Por si la IA no generó el código
  
                 # --- PRIORIDAD 0.5: RASTREADOR DE EVENTOS (LECTURA) ---
-    elif any(w in texto_min for w in ["que tengo", "eventos", "proximos", "calendario", "agenda", "planes"]) and "agendar" not in texto_min:
+   elif any(w in texto_min for w in ["que tengo", "proximos", "mi calendario", "mi agenda", "ver agenda", "mostrar agenda", "planes"]):
         with st.spinner("Escaneando servidores de Google..."):
             try:
                 import calendario
