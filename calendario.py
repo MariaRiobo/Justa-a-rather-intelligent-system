@@ -3,7 +3,7 @@ import json
 import datetime
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-#funciona
+#funcionaa
 def obtener_servicio():
     """Conecta silenciosamente con Google Calendar usando la llave de la bóveda"""
     try:
