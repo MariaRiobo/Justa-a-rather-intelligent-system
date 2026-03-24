@@ -45,6 +45,13 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 return f"🚨 Error en el despliegue de agenda: {e}"
         
         return codigo_ia # Por si la IA no generó el código
+ 
+    # --- PRIORIDAD 0.5: RASTREO DE AGENDA EXISTENTE ---
+    elif any(w in texto_min for w in ["qué tengo", "eventos", "calendario", "agenda", "planes"]) and "agendar" not in texto_min:
+        with st.spinner("Accediendo a tu agenda personal..."):
+            # Llamamos a la función que ya tenías en calendario.py
+            eventos_proximos = calendario.revisar_agenda()
+            return f"👓 **Reporte de Agenda:**\n\n{eventos_proximos}"
 
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
