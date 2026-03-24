@@ -21,43 +21,47 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         with st.spinner("Accediendo a la base de datos financiera..."):
             datos_extra = herramientas.obtener_cotizacion_dolar()
             
-           # PRIORIDAD 6: Agenda Stark (UNIFICADA)
+              # PRIORIDAD 6: Agenda Stark (Protocolo de Obediencia Forzada)
     elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunión", "reunion", "calendario", "cita", "evento"]):
-        with st.spinner("Sincronizando con Google Calendar..."):
-            import pytz
-            from datetime import datetime
-            import calendario
-            import re
+        import pytz
+        from datetime import datetime
+        import calendario
+        import re
+        
+        zona = pytz.timezone('America/Argentina/Buenos_Aires')
+        ahora = datetime.now(zona)
+        fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Este prompt es una orden directa. No le damos opción a conversar.
+        prompt_extraccion = f"""
+        FECHA ACTUAL: {fecha_actual_str}
+        USUARIO: "{texto_usuario}"
+        
+        RESPONDE ÚNICAMENTE CON EL SIGUIENTE FORMATO:
+        $$AGENDAR|Título del evento|YYYY-MM-DDTHH:MM:SS|YYYY-MM-DDTHH:MM:SS$$
+        
+        REGLAS:
+        1. Si no hay hora, asume la hora actual.
+        2. La duración por defecto es de 1 hora.
+        3. No saludes. No confirmes. Solo entrega el código $$.
+        """
+        
+        try:
+            res_extraccion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt_extraccion}],
+                model="llama-3.1-8b-instant",
+                temperature=0 # Temperatura 0 para que sea mecánica y no creativa
+            )
+            codigo_ia = res_extraccion.choices[0].message.content.strip()
             
-            zona = pytz.timezone('America/Argentina/Buenos_Aires')
-            ahora = datetime.now(zona)
-            fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Forzamos a la IA a usar el formato viejo que edith.py entiende
-            prompt_extraccion = f"""
-            FECHA ACTUAL: {fecha_actual_str}
-            SOLICITUD: "{texto_usuario}"
-            
-            Extrae los datos y responde UNICAMENTE con este formato:
-            $$AGENDAR|Título|YYYY-MM-DDTHH:MM:SS|YYYY-MM-DDTHH:MM:SS$$
-            
-            Asume 1 hora si no se especifica. Si dice 'mañana', es {ahora.day + 1}. No hables, solo da el código.
-            """
-            
-            try:
-                res_extraccion = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt_extraccion}],
-                    model="llama-3.1-8b-instant",
-                    temperature=0
-                )
-                codigo_secreto = res_extraccion.choices[0].message.content.strip()
+            # Si la IA respondió con el código $$, se lo pasamos a edith.py
+            if "$$AGENDAR|" in codigo_ia:
+                return codigo_ia
+            else:
+                return "Error: La IA se negó a seguir el protocolo de agenda."
                 
-                # En lugar de ejecutarlo aquí, se lo devolvemos a edith.py 
-                # para que el interceptor haga su trabajo.
-                return codigo_secreto
-                
-            except Exception as e:
-                return f"Falla en sensores de agenda: {e}"
+        except Exception as e:
+            return f"Falla en el enlace neuronal: {e}"
 
             
     # PRIORIDAD 2: Rastreo Meteorológico
