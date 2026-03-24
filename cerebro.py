@@ -46,12 +46,16 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
         
         return codigo_ia # Por si la IA no generó el código
  
-    # --- PRIORIDAD 0.5: RASTREO DE AGENDA EXISTENTE ---
-    elif any(w in texto_min for w in ["qué tengo", "eventos", "calendario", "agenda", "planes"]) and "agendar" not in texto_min:
-        with st.spinner("Accediendo a tu agenda personal..."):
-            # Llamamos a la función que ya tenías en calendario.py
-            eventos_proximos = calendario.revisar_agenda()
-            return f"👓 **Reporte de Agenda:**\n\n{eventos_proximos}"
+        # --- PRIORIDAD 0.5: LECTURA DE AGENDA (EL RASTREADOR) ---
+    elif any(w in texto_min for w in ["qué tengo", "eventos", "proximos", "calendario", "agenda", "planes"]) and "agendar" not in texto_min:
+        with st.spinner("Sincronizando con los servidores de Google..."):
+            try:
+                import calendario
+                # Llamamos a la función que ya tenías escrita
+                reporte_eventos = calendario.revisar_agenda()
+                return f"👓 **Reporte de Situación - Agenda:**\n\n{reporte_eventos}"
+            except Exception as e:
+                return f"🚨 Fallo en los sensores de lectura: {str(e)}"
 
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
