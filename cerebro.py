@@ -53,9 +53,9 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 import calendario
                 # Ejecutamos la función que ya tenés en calendario.py
                 reporte = calendario.revisar_agenda()
-                return f"👓 **Análisis de Agenda Completado:**\n\n{reporte}"
+                return f"**Análisis de Agenda Completado:**\n\n{reporte}"
             except Exception as e:
-                return f"🚨 Error en el radar de eventos: {str(e)}"
+                return f" Error en el radar de eventos: {str(e)}"
 
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
