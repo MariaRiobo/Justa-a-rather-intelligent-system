@@ -45,9 +45,9 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             st.session_state['esperando_confirmacion'] = True
             st.session_state['id_para_borrar'] = evento_encontrado['id']
             st.session_state['nombre_evento'] = evento_encontrado['titulo']
-            return f"⚠️ **PROTOCOLO DE BORRADO:** Encontré el evento **'{evento_encontrado['titulo']}'**. ¿Estás segura de que quieres borrarlo definitivamente?"
+            return f"Encontré el evento **'{evento_encontrado['titulo']}'**. ¿Estás segura de que quieres borrarlo definitivamente?"
         else:
-            return f"👓 No encontré ningún evento próximo que coincida con '{ev}'."
+            return f"No encontré ningún evento próximo que coincida con '{ev}'."
   # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (SÓLO CREACIÓN) ---
     elif any(w in texto_min for w in palabras_agendar) and not any(w in texto_min for w in palabras_pregunta):
         import pytz
