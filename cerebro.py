@@ -10,64 +10,15 @@ import calendario
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def pensar_respuesta(texto_usuario, historial, texto_documento=""):
+    # --- PASO 1: DETECCIÓN MANUAL DE INTENCIÓN ---
     texto_min = texto_usuario.lower()
     datos_extra = ""
-    
-    # ==========================================================
-    # 1. LA ESPERA DEL "SÍ" O "NO" PARA BORRAR
-    # ==========================================================
-    if st.session_state.get('esperando_confirmacion', False):
-        if any(w in texto_min for w in ["si", "sí", "afirmativo", "dale", "borralo", "ok"]):
-            import calendario
-            exito = calendario.ejecutar_borrado(st.session_state['id_para_borrar'])
-            nombre_borrado = st.session_state['nombre_evento']
-            
-            # Limpiamos la memoria
-            st.session_state['esperando_confirmacion'] = False
-            st.session_state['id_para_borrar'] = None
-            st.session_state['nombre_evento'] = None
-            
-            if exito:
-                return f"✅ Entendido. El evento **{nombre_borrado}** ha sido eliminado de tu calendario."
-            else:
-                return "🚨 Hubo un problema técnico y no pude borrar el evento."
-                
-        elif any(w in texto_min for w in ["no", "cancela", "detente", "mejor no", "para", "deja"]):
-            st.session_state['esperando_confirmacion'] = False
-            st.session_state['id_para_borrar'] = None
-            st.session_state['nombre_evento'] = None
-            return "🛑 Operación cancelada. El evento está a salvo en tu calendario."
-            
-        else:
-            return "No te entendí bien. Respondeme 'sí' para borrar el evento o 'no' para cancelar la operación."
+        # --- PRIORIDAD 0: INTERCEPTOR DE AGENDA (SÓLO CREACIÓN) ---
+    # Solo entra aquí si mencionas agendar Y NO estás haciendo una pregunta (que, hay, etc.)
+    palabras_agendar = ["agenda", "agendar", "programa", "reunion", "cita", "evento"]
+    palabras_pregunta = ["que", "hay", "cuales", "ver", "mostrame", "lista"]
 
-    # ==========================================================
-    # 2. DETECCIÓN DE "BORRAR EVENTO"
-    # ==========================================================
-    elif any(w in texto_min for w in ["borra", "borrar", "elimina", "eliminar", "cancela"]) and any(w in texto_min for w in ["evento", "reunion", "cita"]):
-        import calendario
-        prompt_nombre = f"El usuario quiere borrar un evento. Extrae SOLO el nombre o tema del evento en esta frase: '{texto_usuario}'. Responde SOLO con ese nombre."
-        
-        res = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt_nombre}],
-            model="llama-3.1-8b-instant",
-            temperature=0
-        )
-        evento_a_borrar = res.choices[0].message.content.strip()
-        evento_encontrado = calendario.buscar_evento_para_borrar(evento_a_borrar)
-        
-        if evento_encontrado:
-            st.session_state['esperando_confirmacion'] = True
-            st.session_state['id_para_borrar'] = evento_encontrado['id']
-            st.session_state['nombre_evento'] = evento_encontrado['titulo']
-            return f"⚠️ **PROTOCOLO DE BORRADO:** Encontré el evento **'{evento_encontrado['titulo']}'**. ¿Estás segura de que quieres borrarlo definitivamente?"
-        else:
-            return f"👓 Escaneé el calendario pero no encontré ningún evento próximo que coincida con '{evento_a_borrar}'."
-
-    # ==========================================================
-    # 3. INTERCEPTOR DE AGENDA (SÓLO CREACIÓN)
-    # ==========================================================
-    elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunion", "cita", "evento"]) and not any(w in texto_min for w in ["que", "hay", "cuales", "ver", "mostrame", "lista"]):
+    if any(w in texto_min for w in palabras_agendar) and not any(w in texto_min for w in palabras_pregunta):
         import pytz
         from datetime import datetime
         import calendario
@@ -93,19 +44,19 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
             except Exception as e:
                 return f"🚨 Error en la agenda: {e}"
 
-        return codigo_ia
-
-    # ==========================================================
-    # 4. RASTREADOR DE EVENTOS (LECTURA)
-    # ==========================================================
+        return codigo_ia # Por si la IA no generó el código
+ 
+                # --- PRIORIDAD 0.5: RASTREADOR DE EVENTOS (LECTURA) ---
     elif any(w in texto_min for w in ["que tengo", "eventos", "proximos", "calendario", "agenda", "planes"]) and "agendar" not in texto_min:
         with st.spinner("Escaneando servidores de Google..."):
             try:
                 import calendario
+                # Ejecutamos la función que ya tenés en calendario.py
                 reporte = calendario.revisar_agenda()
                 return f"👓 **Análisis de Agenda Completado:**\n\n{reporte}"
             except Exception as e:
                 return f"🚨 Error en el radar de eventos: {str(e)}"
+
 
     # PRIORIDAD 1: Sensor de Divisas (Dólar)
     elif "dolar" in texto_min or "dólar" in texto_min:
