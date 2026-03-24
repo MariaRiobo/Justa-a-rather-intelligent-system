@@ -40,7 +40,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 partes = codigo_ia.replace("$$", "").split("|")
                 if len(partes) >= 4:
                     resultado_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
-                    return f" {resultado_google}"
+                    return f"Listo, Jefa. {resultado_google}"
             except Exception as e:
                 return f"🚨 Error en la agenda: {e}"
 
@@ -53,7 +53,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 import calendario
                 # Ejecutamos la función que ya tenés en calendario.py
                 reporte = calendario.revisar_agenda()
-                return f"Jefa, esto es lo que tienes programado:{reporte}"
+                return f"👓 **Análisis de Agenda Completado:**\n\n{reporte}"
             except Exception as e:
                 return f"🚨 Error en el radar de eventos: {str(e)}"
 
