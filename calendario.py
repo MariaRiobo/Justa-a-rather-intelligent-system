@@ -43,7 +43,7 @@ def revisar_agenda():
     if not eventos:
         return "Tu agenda está completamente despejada, jefa. No hay eventos próximos."
 
-    respuesta = 
+    respuesta =  "Esto es lo que tienes en el radar:\n"
     for evento in eventos:
         # Extraemos cuándo empieza
         inicio = evento['start'].get('dateTime', evento['start'].get('date'))
@@ -56,7 +56,7 @@ def revisar_agenda():
         else:
             inicio_limpio = f"El día {inicio} (Todo el día)"
             
-        respuesta += f" {evento['summary']} - {inicio_limpio}\n"
+        respuesta += f"📅 **{evento['summary']}** - {inicio_limpio}\n"
         
     return respuesta
 
