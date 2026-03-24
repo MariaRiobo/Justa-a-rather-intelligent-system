@@ -74,6 +74,41 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
                 return "Jefa, no pude procesar el tiempo solicitado."
         except:
             return "Error en los sensores de tiempo."
+            
+            
+    # PRIORIDAD 6: Agenda Stark (CALENDARIO INFALIBLE)
+    elif any(w in texto_min for w in ["agenda", "agendar", "programa", "reunión", "reunion", "calendario", "cita"]):
+            import pytz
+            from datetime import datetime
+            
+            zona = pytz.timezone('America/Argentina/Buenos_Aires')
+            ahora = datetime.now(zona)
+            fecha_actual_str = ahora.strftime("%Y-%m-%d %H:%M:%S")
+            
+            prompt_agenda = f"""
+            SISTEMA DE CALENDARIO STARK.
+            FECHA Y HORA ACTUAL EXACTA: {fecha_actual_str}
+            SOLICITUD DEL USUARIO: "{texto_usuario}"
+            
+            INSTRUCCIONES CRÍTICAS:
+            Extrae el título del evento, calcula la fecha de inicio y la fecha de fin.
+            Tu ÚNICA respuesta debe ser el código de datos. Cero charla.
+            FORMATO OBLIGATORIO: $$AGENDAR|Título del evento|YYYY-MM-DDTHH:MM:SS|YYYY-MM-DDTHH:MM:SS$$
+            
+            Si no se especifica duración, asume 1 hora. Si es "mañana", suma 1 día a la fecha actual.
+            """
+            
+            try:
+                res_agenda = client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt_agenda}],
+                    model="llama-3.1-8b-instant", # Usamos el modelo rápido para extraer datos
+                    temperature=0 # Temperatura 0 para que no invente palabras
+                )
+                # Esto fuerza a E.D.I.T.H. a devolver SOLO el código secreto
+                return res_agenda.choices[0].message.content.strip()
+            except Exception as e:
+                return f"Error en los sensores de agenda: {e}"
+    
       # --- PASO 2: CONSTRUCCIÓN DEL MENSAJE (INYECCIÓN) ---
     import pytz
     from datetime import datetime
