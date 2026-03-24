@@ -240,23 +240,24 @@ if user_text or imagen_actual:
          
 
             else:
+                           # --- LLAMADA AL CEREBRO ---
                 contexto_total = texto_documento + texto_youtube + memoria.obtener_contexto_memoria()
                 respuesta = cerebro.pensar_respuesta(user_text, st.session_state.chat_history, contexto_total)
                 
-                # --- 🎯 EL INTERCEPTOR REAL ---
+                # --- 🎯 INTERCEPTOR DE AGENDA (EL GATILLO) ---
                 if "$$AGENDAR|" in respuesta:
-                    # Si detectamos el código, ejecutamos la acción invisible
-                    datos = respuesta.replace("$$", "").split("|")
-                    if len(datos) >= 4:
-                        titulo = datos[1]
-                        inicio = datos[2]
-                        fin = datos[3]
-                        with st.spinner("Escribiendo en los servidores de Google..."):
-                            resultado_calendario = calendario.agendar_evento(titulo, inicio, fin)
-                            respuesta = f"✅ Protocolo completado: {resultado_calendario}"
-                    else:
-                        respuesta = "Error de telemetría: Datos de agenda incompletos."
-      
+                    try:
+                        partes = respuesta.replace("$$", "").split("|")
+                        if len(partes) >= 4:
+                            with st.spinner("Escribiendo en Google Calendar..."):
+                                res_google = calendario.agendar_evento(partes[1], partes[2], partes[3])
+                                respuesta = f"✅ Sistema sincronizado: {res_google}"
+                        else:
+                            respuesta = "Error: Formato de agenda incompleto."
+                    except Exception as e:
+                        respuesta = f"Error en el protocolo de agenda: {e}"
+                # ---------------------------------------------
+    
            # --- ALARMA NIVEL STARK ---
 
             match_timer = re.search(r"\[TIMER:(\d+)\]", respuesta)
