@@ -87,3 +87,28 @@ def agendar_evento(resumen, fecha_inicio_iso, fecha_fin_iso):
     except Exception as e:
         return f"Problema detectado al intentar agendar: {e}"
 
+def buscar_evento_para_borrar(nombre_query):
+    try:
+        service = obtener_servicio()
+        if not service: return None
+        import datetime
+        ahora = datetime.datetime.utcnow().isoformat() + 'Z'
+        resultado = service.events().list(
+            calendarId='primary', q=nombre_query,
+            timeMin=ahora, maxResults=1, singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+        eventos = resultado.get('items', [])
+        if not eventos: return None
+        return {"id": eventos[0]['id'], "titulo": eventos[0]['summary']}
+    except Exception as e:
+        return None
+
+def ejecutar_borrado(evento_id):
+    try:
+        service = obtener_servicio()
+        if not service: return False
+        service.events().delete(calendarId='primary', eventId=evento_id).execute()
+        return True
+    except Exception as e:
+        return False
