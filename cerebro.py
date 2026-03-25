@@ -15,7 +15,7 @@ def pensar_respuesta(texto_usuario, historial, texto_documento=""):
     datos_extra = ""
       
     # Solo entra aquí si mencionas agendar Y NO estás haciendo una pregunta (que, hay, etc.)
-    palabras_agendar = ["agenda", "agendar", "agendame", "programa", "anota", "crea"]
+    palabras_agendar = ["agenda", "agendar", "agendame", "anota", "crea"]
     palabras_pregunta = ["que", "hay", "cuales", "ver", "mostrame", "lista", "mi", "proximos"]
 
     # --- NUEVO: PRIORIDAD MÁXIMA - PROTOCOLO DE BORRADO ---
